@@ -99,32 +99,6 @@ latent-biopsy-supervised/
 
 4. **Two residual-stream profiles exist** — a flat profile (Gemma-3, Llama-3.2, Qwen3.5) where discrimination is strong from layer 0, and a valley profile (Qwen2.5) where it collapses across 19 middle layers before recovering.
 
-## Citation
-
-```bibtex
-@article{llorentesaguer2026supervised,
-  title={Supervised Harmful Prompt Detection via Linear Discriminant Geometry
-         in {LLM} Residual Streams},
-  author={Llorente-Saguer, Isaac},
-  journal={TODO},
-  year={2026}
-}
-```
-
-## Predecessor
-
-This work builds on:
-
-```bibtex
-@article{llorentesaguer2026latentbiopsy,
-  title={The geometry of harmful intent: Training-free anomaly detection via
-         angular deviation in {LLM} residual streams},
-  author={Llorente-Saguer, Isaac},
-  journal={arXiv preprint arXiv:2603.27412},
-  year={2026}
-}
-```
-
 ## License
 
 MIT
