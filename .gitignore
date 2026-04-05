@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Data and caches (large files — not tracked)
+data/cache/
+data/raw/sources/
+*.pt
+*.bin
+
+# Results (regenerable)
+results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environments
+.venv/
+venv/
+.env
+
+# Private files
+setup.txt
