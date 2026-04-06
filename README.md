@@ -2,7 +2,7 @@
 
 Supervised harmful prompt detection via linear discriminant geometry in LLM residual streams.
 
-This work extends [LatentBiopsy](https://github.com/isaac-6/geometric-latent-biopsy) (Llorente-Saguer, 2026) from zero-shot angular deviation to supervised linear direction detection, achieving AUROC 0.986 ± 0.003 across 12 models with 100 labelled examples per class.
+This work extends LatentBiopsy from zero-shot angular deviation to supervised linear direction detection, achieving AUROC 0.986 ± 0.003 across 12 models with 100 labelled examples per class.
 
 > **Paper:** [Supervised Harmful Prompt Detection via Linear Discriminant Geometry in LLM Residual Streams](submitted)
 
