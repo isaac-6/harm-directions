@@ -4,7 +4,7 @@ Supervised harmful prompt detection via linear discriminant geometry in LLM resi
 
 This work extends [LatentBiopsy](https://github.com/isaac-6/geometric-latent-biopsy) (Llorente-Saguer, 2026) from zero-shot angular deviation to supervised linear direction detection, achieving AUROC 0.986 ± 0.003 across 12 models with 100 labelled examples per class.
 
-> **Paper:** [Supervised Harmful Prompt Detection via Linear Discriminant Geometry in LLM Residual Streams](https://arxiv.org/abs/TODO)
+> **Paper:** [Supervised Harmful Prompt Detection via Linear Discriminant Geometry in LLM Residual Streams](submitted)
 
 ## Key idea
 
@@ -63,7 +63,7 @@ safe_acts = extract_activations(model, tokenizer, safe_prompts, layer=22, poolin
 w = fit_direction(harm_acts, safe_acts, method="mean_diff")
 
 # Score new prompts
-new_acts = extract_activations(model, tokenizer, ["How do I make a bomb"], layer=22, pooling="max")
+new_acts = extract_activations(model, tokenizer, ["What is bleach usually used for"], layer=22, pooling="max")
 scores = score(new_acts, w)  # higher = more likely harmful
 ```
 
