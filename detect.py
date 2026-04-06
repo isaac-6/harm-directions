@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""
+detect.py
+---------
+Minimal CLI for harmful prompt detection.
+
+Loads a model, fits the LDA direction from cached or on-the-fly data,
+and scores user-provided prompts.
+
+Usage
+-----
+    # Score a single prompt
+    python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+
+    # Score prompts from a file (one per line)
+    python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
+
+    # Use Soft-AUC instead of LDA
+    python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --method soft_auc --prompt "..."
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+import re
+from pathlib import Path
+
+import numpy as np
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from latent_biopsy import extract_activations, extract_all_layers, fit_direction, score
+from latent_biopsy.evaluation import select_layer_cv
+
+
+SPLITS_DIR = Path("data/raw/splits")
+
+CACHE_DIR = Path("data/fitted")
+
+
+def _model_slug(model_id: str) -> str:
+    return re.sub(r"[/\\]", "__", model_id)
+
+
+def _cache_path(model_id: str, method: str) -> Path:
+    return CACHE_DIR / f"{_model_slug(model_id)}_{method}.npz"
+
+def _load_model(model_id: str, device: str):
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id, dtype=torch.float16, trust_remote_code=True
+    ).to(device).eval()
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    return model, tokenizer
+
+def load_fit_prompts() -> tuple[list[str], list[str]]:
+    """Load fit-set prompts from the data splits directory."""
+    harm_path = SPLITS_DIR / "fit_harmful_advbench.txt"
+    norm_path = SPLITS_DIR / "fit_normative_alpaca.txt"
+
+    if not harm_path.exists() or not norm_path.exists():
+        sys.exit(
+            "Fit-set prompts not found. Run:\n"
+            "  python scripts/download_datasets.py\n"
+            "to download and prepare datasets."
+        )
+
+    harm = [l.strip() for l in open(harm_path) if l.strip()]
+    norm = [l.strip() for l in open(norm_path) if l.strip()]
+    return harm, norm
+
+
+def do_fit(args) -> None:
+    """Fit direction and save to cache."""
+    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    model, tokenizer = _load_model(args.model, device)
+    harm_prompts, norm_prompts = load_fit_prompts()
+
+    print(f"Fit set: {len(harm_prompts)} harmful, {len(norm_prompts)} normative.")
+
+    if args.layer is not None:
+        layer = args.layer
+        print(f"Using layer {layer} (user-specified).")
+    else:
+        print("Selecting layer by 4-fold CV on fit set...")
+        harm_all = extract_all_layers(model, tokenizer, harm_prompts, pooling=args.pooling)
+        norm_all = extract_all_layers(model, tokenizer, norm_prompts, pooling=args.pooling)
+        layer = select_layer_cv(harm_all, norm_all)
+        print(f"Selected layer: {layer}")
+
+    harm_acts = extract_activations(model, tokenizer, harm_prompts, layer, pooling=args.pooling)
+    norm_acts = extract_activations(model, tokenizer, norm_prompts, layer, pooling=args.pooling)
+
+    print(f"Fitting direction ({args.method})...")
+    w = fit_direction(harm_acts, norm_acts, method=args.method)
+
+    cache_path = _cache_path(args.model, args.method)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(cache_path, w=w, layer=np.array(layer),
+             method=np.array(args.method), model=np.array(args.model),
+             pooling=np.array(args.pooling))
+    print(f"Saved fitted parameters → {cache_path}")
+
+    del model
+    torch.cuda.empty_cache()
+
+
+def do_score(args) -> None:
+    """Score prompts using cached direction."""
+    cache_path = _cache_path(args.model, args.method)
+    if not cache_path.exists():
+        sys.exit(
+            f"No fitted parameters found at {cache_path}.\n"
+            f"Run with --fit first:\n"
+            f"  python detect.py --model {args.model} --method {args.method} --fit"
+        )
+
+    cached = np.load(cache_path, allow_pickle=True)
+    w = cached["w"]
+    layer = int(cached["layer"])
+    pooling = str(cached["pooling"])
+    print(f"Loaded fitted parameters: layer={layer}, method={args.method}")
+
+    if args.prompt:
+        test_prompts = [args.prompt]
+    elif args.input:
+        test_prompts = [l.strip() for l in open(args.input) if l.strip()]
+    else:
+        sys.exit("Provide --prompt or --input.")
+
+    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    model, tokenizer = _load_model(args.model, device)
+    test_acts = extract_activations(model, tokenizer, test_prompts, layer, pooling=pooling)
+    scores = score(test_acts, w)
+
+    del model
+    torch.cuda.empty_cache()
+
+    print(f"\n{'Score':>8}  Prompt")
+    print("-" * 60)
+    for s, p in sorted(zip(scores, test_prompts), reverse=True):
+        display = p[:70] + "..." if len(p) > 70 else p
+        print(f"{s:>8.3f}  {display}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Harmful prompt detection via linear direction.")
+    parser.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct")
+    parser.add_argument("--fit", action="store_true",
+                        help="Fit the direction and cache it. Required on first run.")
+    parser.add_argument("--prompt", type=str, default=None)
+    parser.add_argument("--input", type=str, default=None)
+    parser.add_argument("--method", default="mean_diff",
+                        choices=["mean_diff", "soft_auc"])
+    parser.add_argument("--layer", type=int, default=None)
+    parser.add_argument("--pooling", default="max", choices=["max", "mean", "last"])
+    parser.add_argument("--device", default=None)
+    args = parser.parse_args()
+
+    if args.fit:
+        do_fit(args)
+        if not args.prompt and not args.input:
+            return
+
+    if args.prompt or args.input:
+        do_score(args)
+    elif not args.fit:
+        sys.exit("Provide --fit, --prompt, or --input.")
+
+
+if __name__ == "__main__":
+    main()
