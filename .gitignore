@@ -7,8 +7,8 @@ build/
 .eggs/
 
 # Data and caches (large files — not tracked)
-data/cache/
-data/raw/sources/
+data/fitted/*
+data/raw/*
 *.pt
 *.bin
 
