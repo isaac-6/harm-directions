@@ -11,12 +11,17 @@ This work extends [LatentBiopsy](https://github.com/isaac-6/geometric-latent-bio
 Harmful intent in LLMs corresponds to a stable linear direction in residual-stream activation space. This direction is nearly orthogonal (77°) to the leading principal component of safe-prompt activations, which explains why zero-shot approaches fail. With 100 labelled examples, the normalised mean difference (Fisher LDA direction) finds it reliably.
 
 ## Quick start
-
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Detect harmful prompts with a single model
+# Download datasets (fetches from original sources, seed=42)
+python scripts/download_datasets.py
+
+# Fit direction (once per model — selects layer, caches parameters)
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
+
+# Score prompts (loads cached direction — one dot product per prompt)
 python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
 ```
 
@@ -33,8 +38,20 @@ Both require only 100 harmful + 100 normative examples for fitting. At inference
 
 ## Usage
 
-### As a library
+### As a CLI
+```bash
+# Fit (once per model/method pair)
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit --method soft_auc
 
+# Score single prompt
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+
+# Score from file (one prompt per line)
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
+```
+
+### As a library
 ```python
 from latent_biopsy import extract_activations, fit_direction, score
 

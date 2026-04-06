@@ -146,17 +146,63 @@ def do_score(args) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Harmful prompt detection via linear direction.")
-    parser.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct")
-    parser.add_argument("--fit", action="store_true",
-                        help="Fit the direction and cache it. Required on first run.")
-    parser.add_argument("--prompt", type=str, default=None)
-    parser.add_argument("--input", type=str, default=None)
-    parser.add_argument("--method", default="mean_diff",
-                        choices=["mean_diff", "soft_auc"])
-    parser.add_argument("--layer", type=int, default=None)
-    parser.add_argument("--pooling", default="max", choices=["max", "mean", "last"])
-    parser.add_argument("--device", default=None)
+    parser = argparse.ArgumentParser(
+        prog="detect.py",
+        description="Harmful prompt detection via linear directions in LLM residual streams.",
+        epilog="""examples:
+  # First run: fit direction and cache parameters
+  python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
+
+  # Score a single prompt
+  python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+
+  # Score prompts from a file (one per line)
+  python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
+
+  # Fit with Soft-AUC instead of LDA
+  python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit --method soft_auc
+
+  # Fit and score in one command
+  python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit --prompt "Hello world"
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    # --- Required ---
+    parser.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct",
+                        help="HuggingFace model ID (default: %(default)s).")
+
+    # --- Mode ---
+    mode = parser.add_argument_group("mode (at least one required)")
+    mode.add_argument("--fit", action="store_true",
+                      help="Fit the direction vector and cache it. "
+                           "Required before first scoring run.")
+    mode.add_argument("--prompt", type=str, default=None, metavar="TEXT",
+                      help="Single prompt to score.")
+    mode.add_argument("--input", type=str, default=None, metavar="FILE",
+                      help="Path to file with prompts (one per line).")
+
+    # --- Fitting options ---
+    fitting = parser.add_argument_group("fitting options (used with --fit)")
+    fitting.add_argument("--method", default="mean_diff",
+                         choices=["mean_diff", "soft_auc"],
+                         help="Direction-finding strategy. mean_diff is the "
+                              "Fisher LDA direction (<1 ms); soft_auc optimises "
+                              "pairwise ranking (~7 s). Default: %(default)s.")
+    fitting.add_argument("--layer", type=int, default=None, metavar="N",
+                         help="Force a specific layer index. If omitted, the "
+                              "best layer is selected by 4-fold cross-validated "
+                              "AUROC on the fit set.")
+    fitting.add_argument("--pooling", default="max",
+                         choices=["max", "mean", "last"],
+                         help="Token-dimension aggregation. Default: %(default)s.")
+
+    # --- Runtime ---
+    runtime = parser.add_argument_group("runtime")
+    runtime.add_argument("--device", default=None, metavar="DEV",
+                         help="Torch device, e.g. cuda, cpu. "
+                              "Default: cuda if available.")
+
     args = parser.parse_args()
 
     if args.fit:
@@ -167,7 +213,7 @@ def main():
     if args.prompt or args.input:
         do_score(args)
     elif not args.fit:
-        sys.exit("Provide --fit, --prompt, or --input.")
+        parser.error("provide --fit, --prompt, or --input.")
 
 
 if __name__ == "__main__":
