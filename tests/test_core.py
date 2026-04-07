@@ -234,6 +234,69 @@ class TestGeometry:
         angle = direction_angle(w_lda, w_rand)
         assert angle > 60, f"Expected near-orthogonal, got {angle:.1f}°"
 
+        
+# ---------------------------------------------------------------------------
+# Layer Selection
+# ---------------------------------------------------------------------------
+
+class TestLayerSelection:
+
+    def test_select_layer_val(self):
+        """Validation holdout selects the correct layer."""
+        from latent_biopsy.evaluation import select_layer_val
+        rng = np.random.default_rng(42)
+        n_layers = 5
+        D = 32
+
+        # Make layer 3 the most separable
+        fit_h = rng.standard_normal((30, n_layers, D)).astype(np.float32)
+        fit_n = rng.standard_normal((30, n_layers, D)).astype(np.float32)
+        val_h = rng.standard_normal((15, n_layers, D)).astype(np.float32)
+        val_n = rng.standard_normal((15, n_layers, D)).astype(np.float32)
+
+        # Add large separation at layer 3
+        fit_h[:, 3, :] += 3.0
+        val_h[:, 3, :] += 3.0
+
+        best = select_layer_val(fit_h, fit_n, val_h, val_n)
+        assert best == 3
+
+    def test_select_layer_val_custom_fn(self):
+        """Validation holdout works with custom direction and score functions."""
+        from latent_biopsy.evaluation import select_layer_val
+        from latent_biopsy.directions import soft_auc, score_projection
+        rng = np.random.default_rng(42)
+        n_layers = 3
+        D = 16
+
+        fit_h = rng.standard_normal((20, n_layers, D)).astype(np.float32)
+        fit_n = rng.standard_normal((20, n_layers, D)).astype(np.float32)
+        val_h = rng.standard_normal((10, n_layers, D)).astype(np.float32)
+        val_n = rng.standard_normal((10, n_layers, D)).astype(np.float32)
+
+        fit_h[:, 1, :] += 3.0
+        val_h[:, 1, :] += 3.0
+
+        best = select_layer_val(
+            fit_h, fit_n, val_h, val_n,
+            direction_fn=soft_auc, score_fn=score_projection,
+        )
+        assert best == 1
+
+    def test_select_layer_cv_still_works(self):
+        """Old CV method still works (backwards compatibility)."""
+        from latent_biopsy.evaluation import select_layer_cv
+        rng = np.random.default_rng(42)
+        n_layers = 4
+        D = 16
+
+        fit_h = rng.standard_normal((30, n_layers, D)).astype(np.float32)
+        fit_n = rng.standard_normal((30, n_layers, D)).astype(np.float32)
+        fit_h[:, 2, :] += 3.0
+
+        best = select_layer_cv(fit_h, fit_n)
+        assert best == 2
+
 
 # ---------------------------------------------------------------------------
 # Integration

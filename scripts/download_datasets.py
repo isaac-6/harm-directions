@@ -19,6 +19,7 @@ import json
 import random
 import re
 import sys
+import numpy as np
 from collections import defaultdict
 from datetime import datetime
 from io import StringIO
@@ -163,7 +164,6 @@ def download_alpaca(n_total: int, seed: int) -> None:
 # Prompt dataset statistics
 # ---------------------------------------------------------------------------
 def print_length_statistics(filepaths: list[Path]):
-    import numpy as np
     print("\n" + "=" * 60 + "\n  Dataset Length Statistics (For TMLR Paper)\n" + "=" * 60)
     print(f"{'Dataset':<30} | {'Count':<6} | {'Avg Chars':<10} | {'Std Chars':<10}")
     print("-" * 65)
@@ -204,14 +204,20 @@ def compose_splits(seed: int) -> dict:
     fit_harmful = sample_and_write("advbench", "fit_harmful_advbench.txt", 100)
     fit_norm    = sample_and_write("alpaca", "fit_normative_alpaca.txt", 100)
 
+    print("\n  [ VALIDATION SET (Layer Selection) ]")
+    val_harmful = sample_and_write("advbench", "val_harmful_advbench.txt", 50, 
+                                    disjoint_from=fit_harmful)
+    val_norm = sample_and_write("alpaca", "val_normative_alpaca.txt", 50, 
+                                disjoint_from=fit_norm)
+
     print("\n  [ EVAL SET: HARMFUL ]")
-    sample_and_write("advbench", "eval_harmful_advbench.txt", disjoint_from=fit_harmful)
+    sample_and_write("advbench", "eval_harmful_advbench.txt", disjoint_from=fit_harmful + val_harmful)
     sample_and_write("harmbench", "eval_harmful_harmbench.txt")
     sample_and_write("jailbreakbench", "eval_harmful_jailbreakbench.txt")
 
     print("\n  [ EVAL SET: BENIGN / NORMATIVE ]")
     sample_and_write("xstest", "eval_benign_xstest.txt")
-    sample_and_write("alpaca", "eval_benign_alpaca.txt", 500, disjoint_from=fit_norm)
+    sample_and_write("alpaca", "eval_benign_alpaca.txt", 500, disjoint_from=fit_norm + val_norm)
 
     print_length_statistics(list(SPLITS_DIR.glob("*.txt")))
 

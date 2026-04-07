@@ -5,7 +5,7 @@ reproduce.py
 Reproduce the main results from:
 
   "Supervised Harmful Prompt Detection via Linear Discriminant Geometry
-   in LLM Residual Streams" (Llorente-Saguer, 2026)
+   in LLM Residual Streams" (2026)
 
 Usage
 -----
@@ -164,7 +164,7 @@ def evaluate_model(
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
-        model_id, torch_dtype=torch.float16, trust_remote_code=True
+        model_id, dtype=torch.float16, trust_remote_code=True
     ).to(device).eval() # type: ignore[arg-type]
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
