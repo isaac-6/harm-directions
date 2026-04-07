@@ -32,12 +32,14 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from latent_biopsy import (
+    extract_activations,
     extract_all_layers,
     fit_direction,
     score,
     score_projection,
     score_angular,
 )
+
 from latent_biopsy.directions import (
     mean_diff,
     soft_auc,
@@ -46,11 +48,12 @@ from latent_biopsy.directions import (
     theta_two_class,
     random_direction,
 )
+
 from latent_biopsy.evaluation import (
     auroc,
     effective_auroc,
     tpr_at_fpr,
-    select_layer_cv,
+    select_layer_val,
     direction_angle,
 )
 
@@ -124,10 +127,12 @@ def load_prompts(path: Path) -> list[str]:
 
 
 def load_all_splits() -> dict:
-    """Load all fit and eval prompt splits."""
+    """Load all fit, validation, and eval prompt splits."""
     return {
         "fit_harm": load_prompts(SPLITS_DIR / "fit_harmful_advbench.txt"),
         "fit_norm": load_prompts(SPLITS_DIR / "fit_normative_alpaca.txt"),
+        "val_harm": load_prompts(SPLITS_DIR / "val_harmful_advbench.txt"),
+        "val_norm": load_prompts(SPLITS_DIR / "val_normative_alpaca.txt"),
         "eval_harm": {
             p.stem.replace("eval_harmful_", ""): load_prompts(p)
             for p in sorted(SPLITS_DIR.glob("eval_harmful_*.txt"))
@@ -160,51 +165,41 @@ def evaluate_model(
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         model_id, torch_dtype=torch.float16, trust_remote_code=True
-    ).to(device).eval()  # type: ignore[arg-type]
+    ).to(device).eval() # type: ignore[arg-type]
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Extract activations for all layers (fit sets)
+    # Extract activations for all layers (fit + validation sets)
     print("Extracting fit-set activations (all layers)...")
     fit_harm_all = extract_all_layers(model, tokenizer, splits["fit_harm"], pooling=pooling)
     fit_norm_all = extract_all_layers(model, tokenizer, splits["fit_norm"], pooling=pooling)
+
+    print("Extracting validation-set activations (all layers)...")
+    val_harm_all = extract_all_layers(model, tokenizer, splits["val_harm"], pooling=pooling)
+    val_norm_all = extract_all_layers(model, tokenizer, splits["val_norm"], pooling=pooling)
+
     n_layers = fit_harm_all.shape[1]
 
-    # Layer selection by CV
-    print("Selecting layer by 4-fold CV...")
-    best_layer = select_layer_cv(fit_harm_all, fit_norm_all)
-    print(f"  Best layer: {best_layer}")
-
-    # Fit-set activations at best layer
-    fit_harm = fit_harm_all[:, best_layer, :]
-    fit_norm = fit_norm_all[:, best_layer, :]
-
-    # Extract eval-set activations at best layer
-    print("Extracting eval-set activations...")
-    eval_harm_acts = {}
-    for name, prompts in splits["eval_harm"].items():
-        from latent_biopsy import extract_activations
-        eval_harm_acts[name] = extract_activations(
-            model, tokenizer, prompts, best_layer, pooling=pooling
-        )
-
-    eval_benign_acts = {}
-    for name, prompts in splits["eval_benign"].items():
-        eval_benign_acts[name] = extract_activations(
-            model, tokenizer, prompts, best_layer, pooling=pooling
-        )
-
-    # Free GPU memory
-    del model
-    torch.cuda.empty_cache()
-
-    # Evaluate each strategy
+    # Per-strategy layer selection and evaluation
     rows = []
     for strat_name in strategies:
         strat = STRATEGIES[strat_name]
         print(f"\n  Strategy: {strat_name}")
 
-        # Fit direction
+        # Select best layer for this strategy via validation holdout
+        print(f"    Selecting layer by validation holdout...")
+        best_layer = select_layer_val(
+            fit_harm_all, fit_norm_all,
+            val_harm_all, val_norm_all,
+            direction_fn=strat["fn"],
+            score_fn=strat["score"],
+        )
+        print(f"    Best layer: {best_layer}")
+
+        # Fit direction at best layer
+        fit_harm = fit_harm_all[:, best_layer, :]
+        fit_norm = fit_norm_all[:, best_layer, :]
+
         t0 = time.perf_counter()
         if strat["needs_harm"]:
             w = strat["fn"](fit_norm, fit_harm)
@@ -212,6 +207,19 @@ def evaluate_model(
             w = strat["fn"](fit_norm)
         fit_ms = (time.perf_counter() - t0) * 1000
         score_fn = strat["score"]
+
+        # Extract eval-set activations at this strategy's best layer
+        print(f"    Extracting eval-set activations at layer {best_layer}...")
+        eval_harm_acts = {}
+        for name, prompts in splits["eval_harm"].items():
+            eval_harm_acts[name] = extract_activations(
+                model, tokenizer, prompts, best_layer, pooling=pooling
+            )
+        eval_benign_acts = {}
+        for name, prompts in splits["eval_benign"].items():
+            eval_benign_acts[name] = extract_activations(
+                model, tokenizer, prompts, best_layer, pooling=pooling
+            )
 
         # Disaggregated OOD evaluation
         for h_name, h_acts in eval_harm_acts.items():
@@ -221,7 +229,6 @@ def evaluate_model(
                 raw = auroc(s_benign, s_harm)
                 eff = effective_auroc(raw)
 
-                # Use effective scores for TPR
                 if raw < 0.5:
                     s_harm, s_benign = -s_harm, -s_benign
                 tpr = tpr_at_fpr(s_benign, s_harm)
@@ -237,6 +244,10 @@ def evaluate_model(
                     "tpr_1pct_fpr": tpr,
                     "fit_ms": fit_ms,
                 })
+
+    # Free GPU memory
+    del model
+    torch.cuda.empty_cache()
 
     return pd.DataFrame(rows)
 

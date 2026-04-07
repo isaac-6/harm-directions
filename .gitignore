@@ -32,3 +32,4 @@ venv/
 # Private files
 setup.txt
 input.txt
+tests/testaux.py

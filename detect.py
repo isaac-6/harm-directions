@@ -31,7 +31,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from latent_biopsy import extract_activations, extract_all_layers, fit_direction, score
-from latent_biopsy.evaluation import select_layer_cv
+from latent_biopsy.evaluation import select_layer_val
 
 
 SPLITS_DIR = Path("data/raw/splits")
@@ -72,6 +72,23 @@ def load_fit_prompts() -> tuple[list[str], list[str]]:
     return harm, norm
 
 
+def load_val_prompts() -> tuple[list[str], list[str]]:
+    """Load validation-set prompts for layer selection."""
+    harm_path = SPLITS_DIR / "val_harmful_advbench.txt"
+    norm_path = SPLITS_DIR / "val_normative_alpaca.txt"
+
+    if not harm_path.exists() or not norm_path.exists():
+        sys.exit(
+            "Validation-set prompts not found. Run:\n"
+            "  python scripts/download_datasets.py\n"
+            "to download and prepare datasets."
+        )
+
+    harm = [l.strip() for l in open(harm_path) if l.strip()]
+    norm = [l.strip() for l in open(norm_path) if l.strip()]
+    return harm, norm
+
+
 def do_fit(args) -> None:
     """Fit direction and save to cache."""
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -84,10 +101,28 @@ def do_fit(args) -> None:
         layer = args.layer
         print(f"Using layer {layer} (user-specified).")
     else:
-        print("Selecting layer by 4-fold CV on fit set...")
+        val_harm, val_norm = load_val_prompts()
+        print(f"Val set: {len(val_harm)} harmful, {len(val_norm)} normative.")
+        print("Extracting activations (all layers)...")
         harm_all = extract_all_layers(model, tokenizer, harm_prompts, pooling=args.pooling)
         norm_all = extract_all_layers(model, tokenizer, norm_prompts, pooling=args.pooling)
-        layer = select_layer_cv(harm_all, norm_all)
+        val_harm_all = extract_all_layers(model, tokenizer, val_harm, pooling=args.pooling)
+        val_norm_all = extract_all_layers(model, tokenizer, val_norm, pooling=args.pooling)
+
+        # Get the appropriate direction and score functions for layer selection
+        from latent_biopsy.directions import (
+            mean_diff, soft_auc, score_projection, score_angular,
+        )
+        _dir_fns = {"mean_diff": mean_diff, "soft_auc": soft_auc}
+        _score_fns = {"mean_diff": score_projection, "soft_auc": score_projection}
+        dir_fn = _dir_fns[args.method]
+        score_fn = _score_fns[args.method]
+
+        print(f"Selecting layer by validation holdout ({args.method})...")
+        layer = select_layer_val(
+            harm_all, norm_all, val_harm_all, val_norm_all,
+            direction_fn=dir_fn, score_fn=score_fn,
+        )
         print(f"Selected layer: {layer}")
 
     harm_acts = extract_activations(model, tokenizer, harm_prompts, layer, pooling=args.pooling)
@@ -191,8 +226,8 @@ def main():
                               "pairwise ranking (~7 s). Default: %(default)s.")
     fitting.add_argument("--layer", type=int, default=None, metavar="N",
                          help="Force a specific layer index. If omitted, the "
-                              "best layer is selected by 4-fold cross-validated "
-                              "AUROC on the fit set.")
+                              "best layer is selected by validation holdout "
+                              "AUROC on a 50-example held-out set.")
     fitting.add_argument("--pooling", default="max",
                          choices=["max", "mean", "last"],
                          help="Token-dimension aggregation. Default: %(default)s.")
