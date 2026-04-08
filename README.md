@@ -45,7 +45,7 @@ The data is partitioned into three disjoint sets:
 - **Validation set** (layer selection only): 50 harmful (AdvBench) + 50 normative (Alpaca)
 - **Evaluation set**: 370 harmful (AdvBench) + 200 (HarmBench) + 100 (JailbreakBench) + 500 benign (Alpaca) + 250 (XSTest)
 
-Each strategy selects its own optimal layer independently on the validation set. The evaluation set is never used for any model selection decision.
+The operating layer is selected once using mean_diff validation AUROC, then shared across all strategies. The evaluation set is never used for any model selection decision.
 
 ## Usage
 
@@ -86,7 +86,7 @@ scores = score(new_acts, w)  # higher = more likely harmful
 # 1. Download and prepare datasets (AdvBench, HarmBench, JailbreakBench, XSTest, Alpaca)
 python scripts/download_datasets.py
 
-# 2. Run full evaluation across all 12 models (per-strategy layer selection via validation holdout)
+# 2. Run full evaluation across all 12 models (single-layer selection via mean_diff validation holdout)
 python reproduce.py --all
 
 # 3. Run a single model

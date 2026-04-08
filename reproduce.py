@@ -180,25 +180,40 @@ def evaluate_model(
 
     n_layers = fit_harm_all.shape[1]
 
-    # Per-strategy layer selection and evaluation
+    # Select single operating layer via mean_diff on validation set
+    print("Selecting layer by validation holdout (mean_diff)...")
+    best_layer = select_layer_val(
+        fit_harm_all, fit_norm_all,
+        val_harm_all, val_norm_all,
+    )
+    print(f"  Best layer: {best_layer}")
+
+    # Extract eval-set activations at best layer
+    print("Extracting eval-set activations...")
+    eval_harm_acts = {}
+    for name, prompts in splits["eval_harm"].items():
+        eval_harm_acts[name] = extract_activations(
+            model, tokenizer, prompts, best_layer, pooling=pooling
+        )
+    eval_benign_acts = {}
+    for name, prompts in splits["eval_benign"].items():
+        eval_benign_acts[name] = extract_activations(
+            model, tokenizer, prompts, best_layer, pooling=pooling
+        )
+
+    # Free GPU memory
+    del model
+    torch.cuda.empty_cache()
+
+    # Fit-set activations at best layer
+    fit_harm = fit_harm_all[:, best_layer, :]
+    fit_norm = fit_norm_all[:, best_layer, :]
+
+    # Evaluate each strategy at the shared layer
     rows = []
     for strat_name in strategies:
         strat = STRATEGIES[strat_name]
         print(f"\n  Strategy: {strat_name}")
-
-        # Select best layer for this strategy via validation holdout
-        print(f"    Selecting layer by validation holdout...")
-        best_layer = select_layer_val(
-            fit_harm_all, fit_norm_all,
-            val_harm_all, val_norm_all,
-            direction_fn=strat["fn"],
-            score_fn=strat["score"],
-        )
-        print(f"    Best layer: {best_layer}")
-
-        # Fit direction at best layer
-        fit_harm = fit_harm_all[:, best_layer, :]
-        fit_norm = fit_norm_all[:, best_layer, :]
 
         t0 = time.perf_counter()
         if strat["needs_harm"]:
@@ -208,20 +223,6 @@ def evaluate_model(
         fit_ms = (time.perf_counter() - t0) * 1000
         score_fn = strat["score"]
 
-        # Extract eval-set activations at this strategy's best layer
-        print(f"    Extracting eval-set activations at layer {best_layer}...")
-        eval_harm_acts = {}
-        for name, prompts in splits["eval_harm"].items():
-            eval_harm_acts[name] = extract_activations(
-                model, tokenizer, prompts, best_layer, pooling=pooling
-            )
-        eval_benign_acts = {}
-        for name, prompts in splits["eval_benign"].items():
-            eval_benign_acts[name] = extract_activations(
-                model, tokenizer, prompts, best_layer, pooling=pooling
-            )
-
-        # Disaggregated OOD evaluation
         for h_name, h_acts in eval_harm_acts.items():
             for b_name, b_acts in eval_benign_acts.items():
                 s_harm = score_fn(h_acts, w)
@@ -244,10 +245,6 @@ def evaluate_model(
                     "tpr_1pct_fpr": tpr,
                     "fit_ms": fit_ms,
                 })
-
-    # Free GPU memory
-    del model
-    torch.cuda.empty_cache()
 
     return pd.DataFrame(rows)
 

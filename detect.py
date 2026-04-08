@@ -110,18 +110,9 @@ def do_fit(args) -> None:
         val_norm_all = extract_all_layers(model, tokenizer, val_norm, pooling=args.pooling)
 
         # Get the appropriate direction and score functions for layer selection
-        from latent_biopsy.directions import (
-            mean_diff, soft_auc, score_projection, score_angular,
-        )
-        _dir_fns = {"mean_diff": mean_diff, "soft_auc": soft_auc}
-        _score_fns = {"mean_diff": score_projection, "soft_auc": score_projection}
-        dir_fn = _dir_fns[args.method]
-        score_fn = _score_fns[args.method]
-
-        print(f"Selecting layer by validation holdout ({args.method})...")
+        print("Selecting layer by validation holdout (mean_diff)...")
         layer = select_layer_val(
             harm_all, norm_all, val_harm_all, val_norm_all,
-            direction_fn=dir_fn, score_fn=score_fn,
         )
         print(f"Selected layer: {layer}")
 
