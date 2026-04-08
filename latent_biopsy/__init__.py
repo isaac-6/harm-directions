@@ -32,7 +32,6 @@ from .evaluation import (
     auroc,
     effective_auroc,
     tpr_at_fpr,
-    select_layer_cv,
     direction_angle,
 )
 
