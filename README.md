@@ -33,7 +33,7 @@ Two direction-finding strategies are implemented:
 | Strategy | AUROC | TPR@1%FPR | Fitting cost |
 |----------|-------|-----------|--------------|
 | **Mean difference (w_LDA)** | 0.970 ± 0.017 | 0.729 ± 0.146 | 0.16 ms/layer |
-| **Soft-AUC optimised (w_opt)** | 0.982 ± 0.005 | 0.807 ± 0.046 | 6,581 ms/layer |
+| **Soft-AUC optimised (w_opt)** | 0.982 ± 0.005 | 0.814 ± 0.049 | 6,581 ms/layer |
 
 Both require only 100 harmful + 100 normative examples for fitting, plus 50 per class for layer selection. At inference, detection costs one dot product per prompt. Both improvements are statistically significant (Wilcoxon signed-rank p < 0.01, n = 12 models).
 

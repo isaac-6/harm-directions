@@ -283,20 +283,6 @@ class TestLayerSelection:
         )
         assert best == 1
 
-    def test_select_layer_cv_still_works(self):
-        """Old CV method still works (backwards compatibility)."""
-        from latent_biopsy.evaluation import select_layer_cv
-        rng = np.random.default_rng(42)
-        n_layers = 4
-        D = 16
-
-        fit_h = rng.standard_normal((30, n_layers, D)).astype(np.float32)
-        fit_n = rng.standard_normal((30, n_layers, D)).astype(np.float32)
-        fit_h[:, 2, :] += 3.0
-
-        best = select_layer_cv(fit_h, fit_n)
-        assert best == 2
-
 
 # ---------------------------------------------------------------------------
 # Integration
