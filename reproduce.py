@@ -115,6 +115,11 @@ STRATEGIES = {
         "score": score_angular,
         "needs_harm": True,
     },
+    "random": {
+    "fn": random_direction,
+    "score": score_projection,
+    "needs_harm": False,
+    },
 }
 
 
