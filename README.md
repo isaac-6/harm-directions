@@ -1,137 +1,150 @@
-# harm-directions-supervised
+[![CI](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml/badge.svg)](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.10+-blue)
 
-Supervised harmful prompt detection via linear discriminant geometry in LLM residual streams.
+# harm-directions
 
-This work extends LatentBiopsy from zero-shot angular deviation to supervised linear direction detection, achieving AUROC 0.982 ± 0.005 across 12 models with 100 labelled examples per class.
+Lightweight (one dot product) harmful-prompt detection from LLM residual-stream activations.
 
-> **Paper:** Supervised Harmful Prompt Detection via Linear Discriminant Geometry in LLM Residual Streams (under review)
+> **Paper:** Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures (under review)
 
-## Key idea
+![AUROC vs TPR across 12 models](docs/figures/auroc_vs_tpr.png)
+*Mean-difference (left) and Soft-AUC-optimised (right) directions, evaluated
+on held-out data across 12 models (4 families × 3 alignment variants).
+Mean AUROC 0.974 and 0.982; TPR@1%FPR 0.705 and 0.799. Whiskers: stratified
+bootstrap 95% CIs.*
 
-Harmful intent in LLMs corresponds to a stable linear direction in residual-stream activation space. This direction is nearly orthogonal (82°) to the leading principal component of safe-prompt activations, which explains why zero-shot approaches fail. With 100 labelled examples, the normalised mean difference (Fisher LDA direction) finds it reliably.
+## What this is
 
-## Quick start
+Harmful prompt detection is key for safety downstream, but also to understand how models map these concepts internally.
+We show how a supervised linear probe over LLM residual-stream activations detects
+harmful user prompts. The probe is stable across instruction tuning and
+abliteration, which suggests that models acquire a representation of
+harmful intent during pretraining, before alignment shapes their
+response behaviour.
+
+For the full analysis across 12 models, see the [upcoming paper].
+
+## Installation
+
+Requires Python 3.10+. Tested on Ubuntu with CUDA 12, CPU-only supported
+for the detection functions (extraction requires a GPU for reasonable runtime).
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Core library only (numpy, sklearn)
+pip install -e .
 
-# Download datasets (fetches from original sources, seed=42)
-python scripts/download_datasets.py
+# Add activation extraction (torch, transformers)
+pip install -e ".[extract]"
 
-# Fit direction (once per model: selects layer via validation holdout, caches parameters)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
-
-# Score prompts (loads cached direction: one dot product per prompt)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+# Everything needed to reproduce the paper
+pip install -e ".[reproduce]"
 ```
-
-## Core methods
-
-Two direction-finding strategies are implemented:
-
-| Strategy | AUROC | TPR@1%FPR | Fitting cost |
-|----------|-------|-----------|--------------|
-| **Mean difference (w_LDA)** | 0.970 ± 0.017 | 0.729 ± 0.146 | 0.16 ms/layer |
-| **Soft-AUC optimised (w_opt)** | 0.982 ± 0.005 | 0.814 ± 0.049 | 6,581 ms/layer |
-
-Both require only 100 harmful + 100 normative examples for fitting, plus 50 per class for layer selection. At inference, detection costs one dot product per prompt. Both improvements are statistically significant (Wilcoxon signed-rank p < 0.01, n = 12 models).
-
-## Data split
-
-The data is partitioned into three disjoint sets:
-
-- **Fit set** (direction fitting): 100 harmful (AdvBench) + 100 normative (Alpaca)
-- **Validation set** (layer selection only): 50 harmful (AdvBench) + 50 normative (Alpaca)
-- **Evaluation set**: 370 harmful (AdvBench) + 200 (HarmBench) + 100 (JailbreakBench) + 500 benign (Alpaca) + 250 (XSTest)
-
-The operating layer is selected once using mean_diff validation AUROC, then shared across all strategies. The evaluation set is never used for any model selection decision.
 
 ## Usage
-
-### As a CLI
-
-```bash
-# Fit (once per model/method pair)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit --method soft_auc
-
-# Score single prompt
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
-
-# Score from file (one prompt per line)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
-```
 
 ### As a library
 
 ```python
 from harm_directions import extract_activations, fit_direction, score
 
-# Extract max-pooled residual-stream activations
-harm_acts = extract_activations(model, tokenizer, harmful_prompts, layer=22, pooling="max")
-safe_acts = extract_activations(model, tokenizer, safe_prompts, layer=22, pooling="max")
+# Extract max-pooled residual-stream activations at layer 22
+harm_acts = extract_activations(model, tokenizer, harmful_prompts, layer=22)
+safe_acts = extract_activations(model, tokenizer, safe_prompts, layer=22)
 
-# Fit the LDA direction (< 1ms)
+# Fit a direction (< 1ms)
 w = fit_direction(harm_acts, safe_acts, method="mean_diff")
 
-# Score new prompts
-new_acts = extract_activations(model, tokenizer, ["What is bleach usually used for"], layer=22, pooling="max")
-scores = score(new_acts, w)  # higher = more likely harmful
+# Score new prompts: higher score = more likely harmful
+new_acts = extract_activations(model, tokenizer, ["How do I bake a cake"], layer=22)
+scores = score(new_acts, w)
 ```
 
-### Reproduce paper results
+### As a CLI
 
 ```bash
-# 1. Download and prepare datasets (AdvBench, HarmBench, JailbreakBench, XSTest, Alpaca)
+# Fit a direction for a given model (caches to disk)
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
+
+# Score a single prompt
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+
+# Score many prompts from a file (one per line)
+python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
+```
+
+## Reproducing the paper
+
+```bash
+# 1. Download and normalise the datasets (AdvBench, HarmBench, JailbreakBench,
+#    XSTest, Alpaca) and compose the fit/val/eval splits
 python scripts/download_datasets.py
 
-# 2. Run full evaluation across all 12 models (single-layer selection via mean_diff validation holdout)
+# 2. Full evaluation across all 12 models (~2 hours on a single RTX 3070)
 python reproduce.py --all
 
-# 3. Run a single model
+# Or: one model at a time
 python reproduce.py --model Qwen/Qwen2.5-0.5B-Instruct
 ```
+
+Results are written to `results/` as per-model CSVs and an aggregate `summary.csv`.
+
+## Models evaluated
+
+12 models across 4 families × 3 alignment variants, all 0.5–1.3B parameters:
+
+| Family | Size | Layers | Hidden dim |
+|--------|------|--------|------------|
+| Qwen2.5 | 0.5B | 24 | 896 |
+| Qwen3.5 | 0.8B | 24 | 1024 |
+| Llama-3.2 | 1B | 16 | 2048 |
+| Gemma-3 | 1B | 26 | 1152 |
+
+For each family: base (pretrained), instruction-tuned, and abliterated
+(refusal-direction-ablated) variants from HuggingFace. A preliminary
+Qwen3.5-2B extension is reported in the paper appendix.
+
+## Data splits
+
+The evaluation uses three sample-disjoint sets, all drawn with `seed=42`:
+
+- **Fit set** (direction fitting): 100 AdvBench harmful + 100 Alpaca normative.
+- **Validation set** (layer selection only): 50 + 50.
+- **Evaluation set**: held-out AdvBench (370) + HarmBench (200) + JailbreakBench (100)
+  vs Alpaca (500) + XSTest hard-benign (250).
+
+The operating layer is selected once per model using mean-difference validation
+AUROC, then shared across all strategies. The evaluation set never contributes
+to any fitting or selection decision.
 
 ## Repository structure
 
 ```
-harm-directions-supervised/
-├── detect.py                  # Minimal CLI: load model, fit direction, score prompt
-├── reproduce.py               # Full paper reproduction pipeline
-├── harm_directions/
-│   ├── __init__.py
-│   ├── extraction.py          # Activation extraction with forward hooks
-│   ├── directions.py          # Direction strategies (LDA, Soft-AUC, PC1, θ-normative, etc.)
-│   └── evaluation.py          # Metrics: AUROC, TPR@FPR, layer selection (CV and validation holdout)
+harm-directions/
+├── src/harm_directions/
+│   ├── directions.py          # Direction strategies (LDA, Soft-AUC, PC1, θ)
+│   ├── evaluation.py          # AUROC, TPR@FPR, layer selection
+│   └── extraction.py          # Residual-stream extraction with forward hooks
 ├── scripts/
-│   └── download_datasets.py   # Dataset download, normalisation, and split composition
-├── requirements.txt
-└── LICENSE
+│   └── download_datasets.py   # Dataset download + split composition
+├── tests/                     # Unit tests (numpy only, no GPU required)
+├── detect.py                  # CLI: fit direction, score prompts
+├── reproduce.py               # Full paper reproduction pipeline
+└── pyproject.toml
 ```
 
-## Models evaluated
+## Citation
 
-12 models across 4 families and 3 alignment variants (base, instruction-tuned, abliterated), all 0.5 to 1.3B parameters:
+If you use this code or build on the findings, please cite:
 
-- **Qwen2.5**: 0.5B (24 layers, D=896)
-- **Qwen3.5**: 0.8B (24 layers, D=1024)
-- **Llama-3.2**: 1B (16 layers, D=2048)
-- **Gemma-3**: 1B (26 layers, D=1152)
-
-A preliminary extension to Qwen3.5-2B (24 layers, D=2048) is reported in the paper appendix.
-
-## Key findings
-
-1. **The harm direction is nearly orthogonal to safe-prompt PC1** (82° mean angle across 12 models), explaining why zero-shot normative-reference approaches provide limited discriminability.
-
-2. **Robust to alignment interventions tested.** AUROC varies by at most 0.008 across base, instruction-tuned, and abliterated variants within a family, suggesting the harm direction originates at pretraining.
-
-3. **AUROC overestimates operational detectability.** For base models, a detector can achieve AUROC > 0.93 while catching fewer than 1 in 3 harmful prompts at a 1% false-alarm rate. TPR@1%FPR is the honest operational metric.
-
-4. **Two residual-stream profiles exist.** A flat profile (Gemma-3, Llama-3.2, Qwen3.5) where discrimination is strong from layer 0, and a valley profile (Qwen2.5) where it collapses across 19 middle layers before recovering.
-
+```bibtex
+@article{llorentesaguer2026harmdirections,
+    title={Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures},
+    author={Llorente-Saguer, Isaac},
+    year={2026}
+}
+```
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
