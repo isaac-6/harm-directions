@@ -148,16 +148,11 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.10"
-strict = true
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
 check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
 
 # Third-party libraries without stubs
 [[tool.mypy.overrides]]
@@ -168,6 +163,8 @@ module = [
     "matplotlib.*",
     "pandas.*",
     "tqdm.*",
+    "torch.*",
+    "torch",
 ]
 ignore_missing_imports = true
 

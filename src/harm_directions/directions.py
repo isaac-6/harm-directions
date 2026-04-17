@@ -29,7 +29,8 @@ from sklearn.decomposition import PCA
 def _unit(v: np.ndarray) -> np.ndarray:
     """Normalise to unit length. Returns zero vector if norm is negligible."""
     n = np.linalg.norm(v)
-    return v / n if n > 1e-10 else v
+    result = v / n if n > 1e-10 else v
+    return np.asarray(result)
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +40,7 @@ def _unit(v: np.ndarray) -> np.ndarray:
 
 def score_projection(acts: np.ndarray, w: np.ndarray) -> np.ndarray:
     """Signed projection score: acts @ w.  Higher → more harmful."""
-    return (acts @ w).astype(np.float64)
+    return np.asarray((acts @ w).astype(np.float64))
 
 
 def score_angular(acts: np.ndarray, w: np.ndarray) -> np.ndarray:
@@ -105,9 +106,9 @@ def soft_auc(
     Xp = fit_harm.astype(np.float32)
 
     # Warm start from mean difference
-    w = _unit((Xp.mean(0) - Xn.mean(0)).astype(np.float32))
+    w: np.typing.NDArray[np.float32] = _unit((Xp.mean(0) - Xn.mean(0)).astype(np.float32))
     if np.linalg.norm(w) < 0.5:
-        w = _unit(rng.standard_normal(D).astype(np.float32))
+        w = _unit(np.asarray(rng.standard_normal(D)).astype(np.float32))
 
     # Pairwise difference tensor: (n+ * n-, D)
     diffs = (Xp[:, None, :] - Xn[None, :, :]).reshape(-1, D)
@@ -179,7 +180,7 @@ def theta_two_class(
 
     w = _unit(fit_norm.mean(axis=0).astype(np.float32))
     if np.linalg.norm(w) < 0.5:
-        w = _unit(rng.standard_normal(D).astype(np.float32))
+        w = _unit(np.asarray(rng.standard_normal(D)).astype(np.float32))
 
     below_tol_count = 0
     for _step in range(n_iter):

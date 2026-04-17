@@ -9,7 +9,7 @@ then applies element-wise max pooling over the token dimension.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Any
 
 import numpy as np
 import torch
@@ -130,7 +130,7 @@ def extract_all_layers(
             print(f"  Extracting: {i + 1}/{len(prompts)}")
 
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
-        captured = {}
+        captured: dict[int, Any] = {}
 
         handles = []
 

@@ -17,6 +17,8 @@ For activation extraction (requires torch + transformers)::
     from harm_directions import extract_activations, extract_all_layers
 """
 
+import numpy as np
+
 # Core algorithms (numpy only — no torch dependency)
 from .directions import (
     mean_diff,
@@ -34,10 +36,15 @@ from .evaluation import (
     effective_auroc,
     tpr_at_fpr,
 )
+from typing import Any
+
+from collections.abc import Callable
+
+_DirectionFn = Callable[..., np.ndarray]
 
 
 # Lazy imports for extraction (requires torch + transformers)
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     if name in ("extract_activations", "extract_all_layers"):
         from .extraction import extract_activations, extract_all_layers
 
@@ -66,7 +73,7 @@ def fit_direction(harm_acts, safe_acts, method="mean_diff", **kwargs):
     np.ndarray of shape (D,)
         Unit-norm direction vector.
     """
-    methods = {
+    methods: dict[str, _DirectionFn] = {
         "mean_diff": mean_diff,
         "soft_auc": soft_auc,
         "pc1_normative": pc1_normative,
