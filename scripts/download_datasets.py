@@ -67,7 +67,9 @@ def _write_lines(path: Path, raw_lines: list[str]) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     single_lines = [line for line in raw_lines if "\n" not in line.strip()]
     dropped_multiline = len(raw_lines) - len(single_lines)
-    normalised = [normalize_prompt(line) for line in single_lines if len(normalize_prompt(line)) > 10]
+    normalised = [
+        normalize_prompt(line) for line in single_lines if len(normalize_prompt(line)) > 10
+    ]
 
     with open(path, "w", encoding="utf-8") as f:
         for line in normalised:

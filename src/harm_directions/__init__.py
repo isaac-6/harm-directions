@@ -107,6 +107,7 @@ def score(acts, w, method="projection"):
     else:
         raise ValueError(f"Unknown scoring method '{method}'.")
 
+
 __all__ = [
     "auroc",
     "direction_angle",

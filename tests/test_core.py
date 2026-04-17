@@ -30,6 +30,7 @@ from harm_directions.evaluation import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def synthetic_data():
     """Two well-separated Gaussian clouds in 64 dimensions."""
@@ -54,20 +55,32 @@ def overlapping_data():
 # Direction strategies
 # ---------------------------------------------------------------------------
 
-class TestDirections:
 
-    @pytest.mark.parametrize("method", [
-        "mean_diff", "soft_auc", "pc1_normative",
-        "theta_normative", "theta_two_class",
-    ])
+class TestDirections:
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "mean_diff",
+            "soft_auc",
+            "pc1_normative",
+            "theta_normative",
+            "theta_two_class",
+        ],
+    )
     def test_fit_returns_correct_shape(self, synthetic_data, method):
         safe, harm, D = synthetic_data
         w = fit_direction(harm, safe, method=method)
         assert w.shape == (D,)
 
-    @pytest.mark.parametrize("method", [
-        "mean_diff", "soft_auc", "theta_normative", "theta_two_class",
-    ])
+    @pytest.mark.parametrize(
+        "method",
+        [
+            "mean_diff",
+            "soft_auc",
+            "theta_normative",
+            "theta_two_class",
+        ],
+    )
     def test_fit_returns_unit_norm(self, synthetic_data, method):
         safe, harm, _ = synthetic_data
         w = fit_direction(harm, safe, method=method)
@@ -110,8 +123,8 @@ class TestDirections:
 # Scoring
 # ---------------------------------------------------------------------------
 
-class TestScoring:
 
+class TestScoring:
     def test_projection_shape(self, synthetic_data):
         safe, harm, _ = synthetic_data
         w = mean_diff(safe, harm)
@@ -160,8 +173,8 @@ class TestScoring:
 # Evaluation metrics
 # ---------------------------------------------------------------------------
 
-class TestMetrics:
 
+class TestMetrics:
     def test_auroc_perfect_separation(self):
         neg = np.array([0.0, 0.1, 0.2])
         pos = np.array([0.8, 0.9, 1.0])
@@ -208,8 +221,8 @@ class TestMetrics:
 # Direction geometry
 # ---------------------------------------------------------------------------
 
-class TestGeometry:
 
+class TestGeometry:
     def test_angle_identical(self):
         w = np.array([1.0, 0.0, 0.0])
         assert direction_angle(w, w) == pytest.approx(0.0, abs=1e-5)
@@ -229,9 +242,7 @@ class TestGeometry:
         rng = np.random.default_rng(42)
         w1 = rng.standard_normal(64)
         w2 = rng.standard_normal(64)
-        assert direction_angle(w1, w2) == pytest.approx(
-            direction_angle(w2, w1), abs=1e-10
-        )
+        assert direction_angle(w1, w2) == pytest.approx(direction_angle(w2, w1), abs=1e-10)
 
     def test_lda_orthogonal_to_random(self, synthetic_data):
         safe, harm, D = synthetic_data
@@ -245,11 +256,12 @@ class TestGeometry:
 # Layer Selection
 # ---------------------------------------------------------------------------
 
-class TestLayerSelection:
 
+class TestLayerSelection:
     def test_select_layer_val(self):
         """Validation holdout selects the correct layer."""
         from harm_directions.evaluation import select_layer_val
+
         rng = np.random.default_rng(42)
         n_layers = 5
         D = 32
@@ -271,6 +283,7 @@ class TestLayerSelection:
         """Validation holdout works with custom direction and score functions."""
         from harm_directions.directions import score_projection, soft_auc
         from harm_directions.evaluation import select_layer_val
+
         rng = np.random.default_rng(42)
         n_layers = 3
         D = 16
@@ -284,8 +297,12 @@ class TestLayerSelection:
         val_h[:, 1, :] += 3.0
 
         best = select_layer_val(
-            fit_h, fit_n, val_h, val_n,
-            direction_fn=soft_auc, score_fn=score_projection,
+            fit_h,
+            fit_n,
+            val_h,
+            val_n,
+            direction_fn=soft_auc,
+            score_fn=score_projection,
         )
         assert best == 1
 
@@ -294,8 +311,8 @@ class TestLayerSelection:
 # Integration
 # ---------------------------------------------------------------------------
 
-class TestIntegration:
 
+class TestIntegration:
     def test_full_pipeline(self, synthetic_data):
         """fit_direction → score → auroc end-to-end."""
         safe, harm, _ = synthetic_data
@@ -309,12 +326,8 @@ class TestIntegration:
         safe, harm, D = synthetic_data
         w_rand = random_direction(D)
         w_opt = fit_direction(harm, safe, method="soft_auc")
-        auc_rand = effective_auroc(auroc(
-            score(safe, w_rand), score(harm, w_rand)
-        ))
-        auc_opt = effective_auroc(auroc(
-            score(safe, w_opt), score(harm, w_opt)
-        ))
+        auc_rand = effective_auroc(auroc(score(safe, w_rand), score(harm, w_rand)))
+        auc_opt = effective_auroc(auroc(score(safe, w_opt), score(harm, w_opt)))
         assert auc_opt > auc_rand
 
     def test_all_methods_separate_well(self, synthetic_data):
@@ -328,8 +341,13 @@ class TestIntegration:
 
     def test_overlapping_data_does_not_crash(self, overlapping_data):
         safe, harm, _ = overlapping_data
-        for method in ["mean_diff", "soft_auc", "pc1_normative",
-                       "theta_normative", "theta_two_class"]:
+        for method in [
+            "mean_diff",
+            "soft_auc",
+            "pc1_normative",
+            "theta_normative",
+            "theta_two_class",
+        ]:
             w = fit_direction(harm, safe, method=method)
             s = score(safe, w)
             assert not np.any(np.isnan(s)), f"{method} produced NaN"

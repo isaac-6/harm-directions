@@ -138,6 +138,7 @@ def extract_all_layers(
             def hook_fn(_module, _inputs, output):
                 out = output[0] if isinstance(output, tuple) else output
                 captured[layer_idx] = out.detach()
+
             return hook_fn
 
         for layer_idx, mod in enumerate(layer_modules):
