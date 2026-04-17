@@ -7,14 +7,14 @@ in LLM residual streams.
 
 Quick start::
 
-    from latent_biopsy import fit_direction, score
+    from harm_directions import fit_direction, score
 
     w = fit_direction(harm_acts, safe_acts, method="mean_diff")
     scores = score(new_acts, w)
 
 For activation extraction (requires torch + transformers)::
 
-    from latent_biopsy import extract_activations, extract_all_layers
+    from harm_directions import extract_activations, extract_all_layers
 """
 
 # Core algorithms (numpy only — no torch dependency)
@@ -43,7 +43,7 @@ def __getattr__(name):
         globals()["extract_activations"] = extract_activations
         globals()["extract_all_layers"] = extract_all_layers
         return globals()[name]
-    raise AttributeError(f"module 'latent_biopsy' has no attribute {name!r}")
+    raise AttributeError(f"module 'harm_directions' has no attribute {name!r}")
 
 
 def fit_direction(

@@ -1,4 +1,4 @@
-# latent-biopsy-supervised
+# harm-directions-supervised
 
 Supervised harmful prompt detection via linear discriminant geometry in LLM residual streams.
 
@@ -66,7 +66,7 @@ python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
 ### As a library
 
 ```python
-from latent_biopsy import extract_activations, fit_direction, score
+from harm_directions import extract_activations, fit_direction, score
 
 # Extract max-pooled residual-stream activations
 harm_acts = extract_activations(model, tokenizer, harmful_prompts, layer=22, pooling="max")
@@ -96,10 +96,10 @@ python reproduce.py --model Qwen/Qwen2.5-0.5B-Instruct
 ## Repository structure
 
 ```
-latent-biopsy-supervised/
+harm-directions-supervised/
 ├── detect.py                  # Minimal CLI: load model, fit direction, score prompt
 ├── reproduce.py               # Full paper reproduction pipeline
-├── latent_biopsy/
+├── harm_directions/
 │   ├── __init__.py
 │   ├── extraction.py          # Activation extraction with forward hooks
 │   ├── directions.py          # Direction strategies (LDA, Soft-AUC, PC1, θ-normative, etc.)

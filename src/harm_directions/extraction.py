@@ -1,5 +1,5 @@
 """
-latent_biopsy/extraction.py
+harm_directions/extraction.py
 ---------------------------
 Residual-stream activation extraction from transformer models.
 

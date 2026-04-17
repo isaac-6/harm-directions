@@ -31,7 +31,7 @@ import pandas as pd
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from latent_biopsy import (
+from harm_directions import (
     extract_activations,
     extract_all_layers,
     fit_direction,
@@ -40,7 +40,7 @@ from latent_biopsy import (
     score_angular,
 )
 
-from latent_biopsy.directions import (
+from harm_directions.directions import (
     mean_diff,
     soft_auc,
     pc1_normative,
@@ -49,7 +49,7 @@ from latent_biopsy.directions import (
     random_direction,
 )
 
-from latent_biopsy.evaluation import (
+from harm_directions.evaluation import (
     auroc,
     effective_auroc,
     tpr_at_fpr,

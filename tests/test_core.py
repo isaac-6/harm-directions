@@ -10,12 +10,12 @@ Runs on CPU with synthetic data — no GPU or model downloads needed.
 import numpy as np
 import pytest
 
-from latent_biopsy import fit_direction, score
-from latent_biopsy.directions import (
+from harm_directions import fit_direction, score
+from harm_directions.directions import (
     mean_diff, soft_auc, pc1_normative, theta_normative,
     theta_two_class, random_direction, score_projection, score_angular,
 )
-from latent_biopsy.evaluation import (
+from harm_directions.evaluation import (
     auroc, effective_auroc, tpr_at_fpr, direction_angle,
 )
 
@@ -243,7 +243,7 @@ class TestLayerSelection:
 
     def test_select_layer_val(self):
         """Validation holdout selects the correct layer."""
-        from latent_biopsy.evaluation import select_layer_val
+        from harm_directions.evaluation import select_layer_val
         rng = np.random.default_rng(42)
         n_layers = 5
         D = 32
@@ -263,8 +263,8 @@ class TestLayerSelection:
 
     def test_select_layer_val_custom_fn(self):
         """Validation holdout works with custom direction and score functions."""
-        from latent_biopsy.evaluation import select_layer_val
-        from latent_biopsy.directions import soft_auc, score_projection
+        from harm_directions.evaluation import select_layer_val
+        from harm_directions.directions import soft_auc, score_projection
         rng = np.random.default_rng(42)
         n_layers = 3
         D = 16

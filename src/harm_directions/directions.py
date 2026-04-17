@@ -1,5 +1,5 @@
 """
-latent_biopsy/directions.py
+harm_directions/directions.py
 ---------------------------
 Direction-finding strategies for harmful-prompt detection in LLM residual streams.
 

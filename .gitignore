@@ -34,4 +34,5 @@ venv/
 setup.txt
 input.txt
 tests/testaux.py
+.beta/
 submission.zip

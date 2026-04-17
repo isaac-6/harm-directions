@@ -30,8 +30,8 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from latent_biopsy import extract_activations, extract_all_layers, fit_direction, score
-from latent_biopsy.evaluation import select_layer_val
+from harm_directions import extract_activations, extract_all_layers, fit_direction, score
+from harm_directions.evaluation import select_layer_val
 
 
 SPLITS_DIR = Path("data/raw/splits")

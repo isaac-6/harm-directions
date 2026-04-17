@@ -1,5 +1,5 @@
 """
-latent_biopsy/evaluation.py
+harm_directions/evaluation.py
 ---------------------------
 Evaluation metrics and layer selection for harmful-prompt detection.
 """
