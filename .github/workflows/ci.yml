@@ -28,8 +28,7 @@ jobs:
       - name: Install package with dev dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install core + dev, skip torch/transformers to keep CI fast
-          pip install -e ".[dev]" --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
 
       - name: Run tests with coverage
         run: pytest --cov=harm_directions --cov-report=xml --cov-report=term

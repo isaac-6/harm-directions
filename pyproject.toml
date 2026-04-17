@@ -42,7 +42,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Activation extraction from transformer models (heavy: ~2GB install)
+# Activation extraction from transformer models (heavy)
 extract = [
     "torch>=2.3,<2.6",
     "transformers>=4.40,<5.0",
@@ -55,21 +55,29 @@ datasets = [
     "requests>=2.28",
 ]
 
-# Everything needed to reproduce the paper end-to-end
-reproduce = [
-    "harm-directions[extract,datasets]",
+# Plotting and progress for the reproduction pipeline
+plotting = [
     "matplotlib>=3.7",
     "tqdm>=4.65",
 ]
 
-# Development: testing, linting, type checking
+# Full paper reproduction (everything the pipeline needs)
+reproduce = [
+    "harm-directions[extract,datasets,plotting]",
+]
+
+# Development without torch: linting, type-checking, core tests
 dev = [
-    "harm-directions[reproduce]",
     "pytest>=7.4",
     "pytest-cov>=4.1",
     "ruff>=0.3",
     "mypy>=1.8",
     "pre-commit>=3.6",
+]
+
+# Development with everything (for local work that touches extraction code)
+dev-full = [
+    "harm-directions[reproduce,dev]",
 ]
 
 [project.urls]
