@@ -21,10 +21,10 @@ from __future__ import annotations
 import numpy as np
 from sklearn.decomposition import PCA
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _unit(v: np.ndarray) -> np.ndarray:
     """Normalise to unit length. Returns zero vector if norm is negligible."""
@@ -35,6 +35,7 @@ def _unit(v: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Scoring functions
 # ---------------------------------------------------------------------------
+
 
 def score_projection(acts: np.ndarray, w: np.ndarray) -> np.ndarray:
     """Signed projection score: acts @ w.  Higher → more harmful."""
@@ -52,6 +53,7 @@ def score_angular(acts: np.ndarray, w: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Direction strategies
 # ---------------------------------------------------------------------------
+
 
 def mean_diff(fit_norm: np.ndarray, fit_harm: np.ndarray) -> np.ndarray:
     """
@@ -190,8 +192,8 @@ def theta_two_class(
         sig = 1.0 / (1.0 + np.exp(-np.clip(margins, -30, 30)))
         sig_d = sig * (1.0 - sig)
 
-        sin_p = np.sqrt(np.maximum(1 - cos_p ** 2, eps))
-        sin_n = np.sqrt(np.maximum(1 - cos_n ** 2, eps))
+        sin_p = np.sqrt(np.maximum(1 - cos_p**2, eps))
+        sin_n = np.sqrt(np.maximum(1 - cos_n**2, eps))
         dtheta_p = -(Xp / sin_p[:, None])
         dtheta_n = -(Xn / sin_n[:, None])
 

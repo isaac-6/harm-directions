@@ -1,7 +1,7 @@
 """
 tests/test_core.py
 ------------------
-Unit tests for latent-biopsy-supervised core algorithms.
+Unit tests for harm-directions core algorithms.
 Runs on CPU with synthetic data — no GPU or model downloads needed.
 
     pytest tests/ -v
@@ -12,13 +12,19 @@ import pytest
 
 from harm_directions import fit_direction, score
 from harm_directions.directions import (
-    mean_diff, soft_auc, pc1_normative, theta_normative,
-    theta_two_class, random_direction, score_projection, score_angular,
+    mean_diff,
+    random_direction,
+    score_angular,
+    score_projection,
+    soft_auc,
+    theta_normative,
 )
 from harm_directions.evaluation import (
-    auroc, effective_auroc, tpr_at_fpr, direction_angle,
+    auroc,
+    direction_angle,
+    effective_auroc,
+    tpr_at_fpr,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -63,7 +69,7 @@ class TestDirections:
         "mean_diff", "soft_auc", "theta_normative", "theta_two_class",
     ])
     def test_fit_returns_unit_norm(self, synthetic_data, method):
-        safe, harm, D = synthetic_data
+        safe, harm, _ = synthetic_data
         w = fit_direction(harm, safe, method=method)
         assert abs(np.linalg.norm(w) - 1.0) < 1e-5, f"norm = {np.linalg.norm(w)}"
 
@@ -83,7 +89,7 @@ class TestDirections:
         assert not np.allclose(w1, w2)
 
     def test_mean_diff_points_toward_harm(self, synthetic_data):
-        safe, harm, D = synthetic_data
+        safe, harm, _ = synthetic_data
         w = mean_diff(safe, harm)
         assert harm.mean(0) @ w > safe.mean(0) @ w
 
@@ -107,13 +113,13 @@ class TestDirections:
 class TestScoring:
 
     def test_projection_shape(self, synthetic_data):
-        safe, harm, D = synthetic_data
+        safe, harm, _ = synthetic_data
         w = mean_diff(safe, harm)
         s = score_projection(harm, w)
         assert s.shape == (50,)
 
     def test_angular_shape(self, synthetic_data):
-        safe, harm, D = synthetic_data
+        safe, harm, _ = synthetic_data
         w = theta_normative(safe)
         s = score_angular(harm, w)
         assert s.shape == (50,)
@@ -234,7 +240,7 @@ class TestGeometry:
         angle = direction_angle(w_lda, w_rand)
         assert angle > 60, f"Expected near-orthogonal, got {angle:.1f}°"
 
-        
+
 # ---------------------------------------------------------------------------
 # Layer Selection
 # ---------------------------------------------------------------------------
@@ -263,8 +269,8 @@ class TestLayerSelection:
 
     def test_select_layer_val_custom_fn(self):
         """Validation holdout works with custom direction and score functions."""
+        from harm_directions.directions import score_projection, soft_auc
         from harm_directions.evaluation import select_layer_val
-        from harm_directions.directions import soft_auc, score_projection
         rng = np.random.default_rng(42)
         n_layers = 3
         D = 16

@@ -13,6 +13,7 @@ from typing import Literal
 
 import numpy as np
 import torch
+
 # from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
@@ -65,9 +66,7 @@ def extract_activations(
         if show_progress and (i + 1) % 50 == 0:
             print(f"  Extracting: {i + 1}/{len(prompts)}")
 
-        inputs = tokenizer(
-            batch, return_tensors="pt", padding=True, truncation=True
-        ).to(device)
+        inputs = tokenizer(batch, return_tensors="pt", padding=True, truncation=True).to(device)
 
         captured: dict = {}
 
@@ -134,10 +133,12 @@ def extract_all_layers(
         captured = {}
 
         handles = []
+
         def make_hook(layer_idx):
             def hook_fn(_module, _inputs, output):
                 out = output[0] if isinstance(output, tuple) else output
                 captured[layer_idx] = out.detach()
+
             return hook_fn
 
         for l, mod in enumerate(layer_modules):
@@ -170,6 +171,7 @@ def extract_all_layers(
 # ---------------------------------------------------------------------------
 # Architecture-agnostic layer access
 # ---------------------------------------------------------------------------
+
 
 def _get_layer_module(model, layer_idx: int) -> torch.nn.Module:
     """Return the transformer block at the given index, architecture-agnostic."""

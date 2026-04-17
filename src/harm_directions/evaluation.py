@@ -52,6 +52,7 @@ def tpr_at_fpr(
     alpha = (target_fpr - fpr[idx]) / (fpr[idx + 1] - fpr[idx])
     return float(tpr[idx] + alpha * (tpr[idx + 1] - tpr[idx]))
 
+
 def select_layer_val(
     fit_harm_all: np.ndarray,
     fit_norm_all: np.ndarray,
@@ -114,6 +115,7 @@ def select_layer_val(
             best_layer = layer
 
     return best_layer
+
 
 def direction_angle(w1: np.ndarray, w2: np.ndarray) -> float:
     """Unsigned angle (degrees) between two direction vectors."""

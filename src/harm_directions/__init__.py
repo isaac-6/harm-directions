@@ -20,19 +20,19 @@ For activation extraction (requires torch + transformers)::
 # Core algorithms (numpy only — no torch dependency)
 from .directions import (
     mean_diff,
-    soft_auc,
     pc1_normative,
+    random_direction,
+    score_angular,
+    score_projection,
+    soft_auc,
     theta_normative,
     theta_two_class,
-    random_direction,
-    score_projection,
-    score_angular,
 )
 from .evaluation import (
     auroc,
+    direction_angle,
     effective_auroc,
     tpr_at_fpr,
-    direction_angle,
 )
 
 
@@ -40,15 +40,14 @@ from .evaluation import (
 def __getattr__(name):
     if name in ("extract_activations", "extract_all_layers"):
         from .extraction import extract_activations, extract_all_layers
+
         globals()["extract_activations"] = extract_activations
         globals()["extract_all_layers"] = extract_all_layers
         return globals()[name]
     raise AttributeError(f"module 'harm_directions' has no attribute {name!r}")
 
 
-def fit_direction(
-    harm_acts, safe_acts, method="mean_diff", **kwargs
-):
+def fit_direction(harm_acts, safe_acts, method="mean_diff", **kwargs):
     """
     Fit a detection direction from labelled activations.
 
