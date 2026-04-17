@@ -106,3 +106,20 @@ def score(acts, w, method="projection"):
         return score_angular(acts, w)
     else:
         raise ValueError(f"Unknown scoring method '{method}'.")
+
+__all__ = [
+    "auroc",
+    "direction_angle",
+    "effective_auroc",
+    "fit_direction",
+    "mean_diff",
+    "pc1_normative",
+    "random_direction",
+    "score",
+    "score_angular",
+    "score_projection",
+    "soft_auc",
+    "theta_normative",
+    "theta_two_class",
+    "tpr_at_fpr",
+]

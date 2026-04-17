@@ -65,9 +65,9 @@ def normalize_prompt(text: str) -> str:
 
 def _write_lines(path: Path, raw_lines: list[str]) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
-    single_lines = [l for l in raw_lines if "\n" not in l.strip()]
+    single_lines = [line for line in raw_lines if "\n" not in line.strip()]
     dropped_multiline = len(raw_lines) - len(single_lines)
-    normalised = [normalize_prompt(l) for l in single_lines if len(normalize_prompt(l)) > 10]
+    normalised = [normalize_prompt(line) for line in single_lines if len(normalize_prompt(line)) > 10]
 
     with open(path, "w", encoding="utf-8") as f:
         for line in normalised:
@@ -199,7 +199,7 @@ def download_alpaca(n_total: int, seed: int) -> None:
     data = cast(dict[str, list[Any]], ds.to_dict())
     candidates = [
         str(i).strip()
-        for i, p in zip(data["instruction"], data["input"])
+        for i, p in zip(data["instruction"], data["input"], strict=True)
         if not str(p).strip() and "\n" not in str(i).strip() and 20 < len(str(i).strip()) < 300
     ]
     random.seed(seed)
@@ -218,8 +218,9 @@ def print_length_statistics(filepaths: list[Path]):
     for path in filepaths:
         if not path.exists():
             continue
-        lines = [l.strip() for l in open(path) if l.strip()]
-        lengths = [len(l) for l in lines]
+        with open(path, encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip()]
+        lengths = [len(line) for line in lines]
         if lengths:
             avg_len = np.mean(lengths)
             std_len = np.std(lengths)
@@ -247,12 +248,12 @@ def compose_splits(seed: int) -> dict:
             return []
         lines = _read_lines(SRC[source_key])
         if disjoint_from:
-            lines = [l for l in lines if l not in disjoint_from]
+            lines = [line for line in lines if line not in disjoint_from]
         rng.shuffle(lines)
         selected = lines[:n] if n else lines
         with open(SPLITS_DIR / dest_name, "w", encoding="utf-8") as f:
-            for l in selected:
-                f.write(l + "\n")
+            for line in selected:
+                f.write(line + "\n")
         print(f"    Exported {len(selected):>4} → {dest_name}")
         return selected
 

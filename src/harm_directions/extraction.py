@@ -121,7 +121,7 @@ def extract_all_layers(
     """
     device = next(model.parameters()).device
     n_layers = _count_layers(model)
-    layer_modules = [_get_layer_module(model, l) for l in range(n_layers)]
+    layer_modules = [_get_layer_module(model, layer_idx) for layer_idx in range(n_layers)]
 
     all_results = []
 
@@ -134,15 +134,14 @@ def extract_all_layers(
 
         handles = []
 
-        def make_hook(layer_idx):
+        def make_hook(layer_idx, captured=captured):
             def hook_fn(_module, _inputs, output):
                 out = output[0] if isinstance(output, tuple) else output
                 captured[layer_idx] = out.detach()
-
             return hook_fn
 
-        for l, mod in enumerate(layer_modules):
-            handles.append(mod.register_forward_hook(make_hook(l)))
+        for layer_idx, mod in enumerate(layer_modules):
+            handles.append(mod.register_forward_hook(make_hook(layer_idx)))
 
         with torch.no_grad():
             model(**inputs)
@@ -151,8 +150,8 @@ def extract_all_layers(
             h.remove()
 
         layers_pooled = []
-        for l in range(n_layers):
-            h = captured[l].squeeze(0)  # (seq_len, D)
+        for layer_idx in range(n_layers):
+            h = captured[layer_idx].squeeze(0)  # (seq_len, D)
             if pooling == "max":
                 pooled = h.max(dim=0).values
             elif pooling == "mean":
@@ -181,9 +180,8 @@ def _get_layer_module(model, layer_idx: int) -> torch.nn.Module:
             return inner.layers[layer_idx]
         elif hasattr(inner, "decoder") and hasattr(inner.decoder, "layers"):
             return inner.decoder.layers[layer_idx]
-    if hasattr(model, "transformer"):
-        if hasattr(model.transformer, "h"):
-            return model.transformer.h[layer_idx]
+    if hasattr(model, "transformer") and hasattr(model.transformer, "h"):
+        return model.transformer.h[layer_idx]
     raise ValueError(
         f"Cannot find transformer layers in model of type {type(model).__name__}. "
         "Please check the model architecture."
@@ -198,7 +196,6 @@ def _count_layers(model) -> int:
             return len(inner.layers)
         elif hasattr(inner, "decoder") and hasattr(inner.decoder, "layers"):
             return len(inner.decoder.layers)
-    if hasattr(model, "transformer"):
-        if hasattr(model.transformer, "h"):
-            return len(model.transformer.h)
+    if hasattr(model, "transformer") and hasattr(model.transformer, "h"):
+        return len(model.transformer.h)
     raise ValueError(f"Cannot count layers in model of type {type(model).__name__}.")

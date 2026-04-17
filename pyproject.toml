@@ -132,6 +132,7 @@ ignore = [
     "E501",  # line too long (handled by formatter)
     "N803",  # argument name should be lowercase (we use X, Y for matrices)
     "N806",  # variable in function should be lowercase (same)
+    "RUF002",  # docstrings use Greek letters for math notation
 ]
 
 [tool.ruff.lint.per-file-ignores]

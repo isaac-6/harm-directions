@@ -113,7 +113,7 @@ def soft_auc(
     diffs = (Xp[:, None, :] - Xn[None, :, :]).reshape(-1, D)
 
     below_tol_count = 0
-    for step in range(n_iter):
+    for _step in range(n_iter):
         margins = (diffs @ w) / tau
         sig = 1.0 / (1.0 + np.exp(-np.clip(margins, -30, 30)))
         sig_d = sig * (1.0 - sig)
@@ -182,7 +182,7 @@ def theta_two_class(
         w = _unit(rng.standard_normal(D).astype(np.float32))
 
     below_tol_count = 0
-    for step in range(n_iter):
+    for _step in range(n_iter):
         cos_p = np.clip(Xp @ w, -1.0, 1.0)
         cos_n = np.clip(Xn @ w, -1.0, 1.0)
         theta_p = np.arccos(cos_p)
