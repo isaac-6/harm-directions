@@ -8,7 +8,7 @@ Lightweight (one dot product) harmful-prompt detection from LLM residual-stream 
 
 > **Paper:** Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures (under review)
 
-![AUROC vs TPR across 12 models](docs/figures/auroc_vs_tpr.png)
+![AUROC vs TPR across 12 models](docs/figures/fig_auroc_vs_tpr.png)
 *Mean-difference (left) and Soft-AUC-optimised (right) directions, evaluated
 on held-out data across 12 models (4 families × 3 alignment variants).
 Mean AUROC 0.974 and 0.982; TPR@1%FPR 0.705 and 0.799. Whiskers: stratified
