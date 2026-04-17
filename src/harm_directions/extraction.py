@@ -9,7 +9,7 @@ then applies element-wise max pooling over the token dimension.
 
 from __future__ import annotations
 
-from typing import Literal, Any
+from typing import Any, Literal
 
 import numpy as np
 import torch

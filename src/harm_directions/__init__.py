@@ -17,6 +17,9 @@ For activation extraction (requires torch + transformers)::
     from harm_directions import extract_activations, extract_all_layers
 """
 
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 
 # Core algorithms (numpy only — no torch dependency)
@@ -36,9 +39,6 @@ from .evaluation import (
     effective_auroc,
     tpr_at_fpr,
 )
-from typing import Any
-
-from collections.abc import Callable
 
 _DirectionFn = Callable[..., np.ndarray]
 
