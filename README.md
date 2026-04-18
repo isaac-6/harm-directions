@@ -74,7 +74,7 @@ python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
 ```
 
 ## Reproducing the paper
-
+Note that some datasets and models are gated.
 ```bash
 # 1. Download and normalise the datasets (AdvBench, HarmBench, JailbreakBench,
 #    XSTest, Alpaca) and compose the fit/val/eval splits
