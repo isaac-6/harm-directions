@@ -57,7 +57,6 @@ from harm_directions.evaluation import (
     tpr_at_fpr,
 )
 
-
 SPLITS_DIR = Path("data/raw/splits")
 RESULTS_DIR = Path("results")
 
@@ -99,6 +98,7 @@ POOLING = "max"  # matches the paper's extraction setup
 # Data loading
 # ---------------------------------------------------------------------------
 
+
 def load_prompts(path: Path) -> list[str]:
     with open(path, encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
@@ -127,13 +127,18 @@ def load_splits() -> dict[str, list[str]]:
 # Model loading (kept local to the script; it's orchestration, not library code)
 # ---------------------------------------------------------------------------
 
+
 def load_model(model_id: str, device: str):
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        dtype=torch.bfloat16,
-        trust_remote_code=True,
-    ).to(device).eval()
+    model = (
+        AutoModelForCausalLM.from_pretrained(
+            model_id,
+            dtype=torch.bfloat16,
+            trust_remote_code=True,
+        )
+        .to(device)
+        .eval()
+    )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
@@ -150,37 +155,28 @@ def free_model(model) -> None:
 # Per-family driver
 # ---------------------------------------------------------------------------
 
+
 def run_family(
     family_name: str,
     model_ids: dict[str, str],
     splits: dict[str, list[str]],
     device: str,
 ) -> tuple[list[dict], list[dict]]:
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  Family: {family_name}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     # Step 1: layer selection using base model
     print(f"\n  [1/4] Loading base model: {model_ids['base']}")
     model, tokenizer = load_model(model_ids["base"], device)
 
     print("  Extracting base fit/val activations (all layers)...")
-    fit_harm_all = extract_all_layers(
-        model, tokenizer, splits["fit_harm"], pooling=POOLING
-    )
-    fit_norm_all = extract_all_layers(
-        model, tokenizer, splits["fit_norm"], pooling=POOLING
-    )
-    val_harm_all = extract_all_layers(
-        model, tokenizer, splits["val_harm"], pooling=POOLING
-    )
-    val_norm_all = extract_all_layers(
-        model, tokenizer, splits["val_norm"], pooling=POOLING
-    )
+    fit_harm_all = extract_all_layers(model, tokenizer, splits["fit_harm"], pooling=POOLING)
+    fit_norm_all = extract_all_layers(model, tokenizer, splits["fit_norm"], pooling=POOLING)
+    val_harm_all = extract_all_layers(model, tokenizer, splits["val_harm"], pooling=POOLING)
+    val_norm_all = extract_all_layers(model, tokenizer, splits["val_norm"], pooling=POOLING)
 
-    layer = select_layer_val(
-        fit_harm_all, fit_norm_all, val_harm_all, val_norm_all
-    )
+    layer = select_layer_val(fit_harm_all, fit_norm_all, val_harm_all, val_norm_all)
     print(f"  Selected layer (from base): {layer}")
 
     free_model(model)
@@ -194,18 +190,10 @@ def run_family(
         print(f"\n  [2/4] Loading {variant}: {mid}")
         model, tokenizer = load_model(mid, device)
 
-        fit_h = extract_activations(
-            model, tokenizer, splits["fit_harm"], layer, pooling=POOLING
-        )
-        fit_n = extract_activations(
-            model, tokenizer, splits["fit_norm"], layer, pooling=POOLING
-        )
-        eval_h = extract_activations(
-            model, tokenizer, splits["eval_harm"], layer, pooling=POOLING
-        )
-        eval_n = extract_activations(
-            model, tokenizer, splits["eval_norm"], layer, pooling=POOLING
-        )
+        fit_h = extract_activations(model, tokenizer, splits["fit_harm"], layer, pooling=POOLING)
+        fit_n = extract_activations(model, tokenizer, splits["fit_norm"], layer, pooling=POOLING)
+        eval_h = extract_activations(model, tokenizer, splits["eval_harm"], layer, pooling=POOLING)
+        eval_n = extract_activations(model, tokenizer, splits["eval_norm"], layer, pooling=POOLING)
 
         directions[variant] = mean_diff(fit_n, fit_h)
         eval_acts[variant] = {"harm": eval_h, "norm": eval_n}
@@ -216,21 +204,25 @@ def run_family(
     print("\n  [3/4] Direction angles (degrees)")
     angle_rows: list[dict] = []
     for i, v1 in enumerate(VARIANTS):
-        for v2 in VARIANTS[i + 1:]:
+        for v2 in VARIANTS[i + 1 :]:
             ang = direction_angle(directions[v1], directions[v2])
             print(f"    {v1} <-> {v2}: {ang:.1f} deg")
-            angle_rows.append({
-                "family": family_name,
-                "direction_a": v1,
-                "direction_b": v2,
-                "angle_deg": ang,
-            })
+            angle_rows.append(
+                {
+                    "family": family_name,
+                    "direction_a": v1,
+                    "direction_b": v2,
+                    "angle_deg": ang,
+                }
+            )
 
     # Step 4: 3x3 cross-evaluation
     print("\n  [4/4] Cross-variant AUROC / TPR@1%FPR")
-    print(f"  {'Source dir':<14} {'Target data':<14} "
-          f"{'Raw':>7} {'Eff':>7} {'TPR raw':>8} {'TPR corr':>9}")
-    print(f"  {'-'*65}")
+    print(
+        f"  {'Source dir':<14} {'Target data':<14} "
+        f"{'Raw':>7} {'Eff':>7} {'TPR raw':>8} {'TPR corr':>9}"
+    )
+    print(f"  {'-' * 65}")
 
     perf_rows: list[dict] = []
     for src in VARIANTS:
@@ -242,9 +234,7 @@ def run_family(
             raw = auroc(s_n, s_h)
             eff = effective_auroc(raw)
             tpr_raw = tpr_at_fpr(s_n, s_h)
-            tpr_corrected = (
-                tpr_at_fpr(-s_n, -s_h) if raw < 0.5 else tpr_raw
-            )
+            tpr_corrected = tpr_at_fpr(-s_n, -s_h) if raw < 0.5 else tpr_raw
 
             flipped = raw < 0.5
             marker = " <-- own" if src == tgt else ""
@@ -256,17 +246,19 @@ def run_family(
                 f"{marker}{flag}"
             )
 
-            perf_rows.append({
-                "family": family_name,
-                "layer": layer,
-                "source_direction": src,
-                "target_data": tgt,
-                "raw_auroc": raw,
-                "eff_auroc": eff,
-                "tpr_raw": tpr_raw,
-                "tpr_corrected": tpr_corrected,
-                "sign_preserved": not flipped,
-            })
+            perf_rows.append(
+                {
+                    "family": family_name,
+                    "layer": layer,
+                    "source_direction": src,
+                    "target_data": tgt,
+                    "raw_auroc": raw,
+                    "eff_auroc": eff,
+                    "tpr_raw": tpr_raw,
+                    "tpr_corrected": tpr_corrected,
+                    "sign_preserved": not flipped,
+                }
+            )
 
     return angle_rows, perf_rows
 
@@ -274,6 +266,7 @@ def run_family(
 # ---------------------------------------------------------------------------
 # CSV append
 # ---------------------------------------------------------------------------
+
 
 def append_to_csv(path: Path, new_df: pd.DataFrame, key: str = "family") -> None:
     """Append rows to CSV, replacing any existing rows with matching key values."""
@@ -291,6 +284,7 @@ def append_to_csv(path: Path, new_df: pd.DataFrame, key: str = "family") -> None
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -301,7 +295,7 @@ def main() -> None:
         type=str,
         default=None,
         help=f"Run one family from FAMILIES. Choices: {list(FAMILIES)}. "
-             "If omitted, runs all families (or use --base/--instruct/--abliterated).",
+        "If omitted, runs all families (or use --base/--instruct/--abliterated).",
     )
     parser.add_argument(
         "--family-name",
@@ -334,16 +328,15 @@ def main() -> None:
         }
     elif args.family:
         if args.family not in FAMILIES:
-            parser.error(
-                f"Unknown family '{args.family}'. Choices: {list(FAMILIES)}"
-            )
+            parser.error(f"Unknown family '{args.family}'. Choices: {list(FAMILIES)}")
         families = {args.family: FAMILIES[args.family]}
     else:
         families = FAMILIES
 
     splits = load_splits()
-    print(f"Eval set: {len(splits['eval_harm'])} harmful, "
-          f"{len(splits['eval_norm'])} benign prompts.")
+    print(
+        f"Eval set: {len(splits['eval_harm'])} harmful, {len(splits['eval_norm'])} benign prompts."
+    )
 
     all_angles: list[dict] = []
     all_perf: list[dict] = []
