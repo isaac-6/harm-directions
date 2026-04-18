@@ -80,7 +80,7 @@ python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
 #    XSTest, Alpaca) and compose the fit/val/eval splits
 python scripts/download_datasets.py
 
-# 2. Full evaluation across all 12 models (~2 hours on a single RTX 3070)
+# 2. Full evaluation across all 12 models (~36 minutes on a single RTX 3070)
 python reproduce.py --all
 
 # Or: one model at a time
