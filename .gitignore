@@ -30,6 +30,12 @@ Thumbs.db
 venv/
 .env
 
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
 # Private files
 setup.txt
 input.txt
