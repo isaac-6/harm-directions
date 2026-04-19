@@ -22,41 +22,45 @@ Usage
 from __future__ import annotations
 
 import argparse
-import json
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
+import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from collections.abc import Callable
+from typing import TypedDict
 
 from harm_directions import (
     extract_activations,
     extract_all_layers,
-    fit_direction,
-    score,
-    score_projection,
     score_angular,
+    score_projection,
 )
-
 from harm_directions.directions import (
     mean_diff,
-    soft_auc,
     pc1_normative,
+    soft_auc,
     theta_normative,
     theta_two_class,
-    random_direction,
 )
-
 from harm_directions.evaluation import (
     auroc,
     effective_auroc,
-    tpr_at_fpr,
     select_layer_val,
-    direction_angle,
+    tpr_at_fpr,
 )
 
+_DirectionFn = Callable[..., np.ndarray]
+_ScoreFn = Callable[[np.ndarray, np.ndarray], np.ndarray]
+
+
+class _StrategySpec(TypedDict):
+    fn: _DirectionFn
+    score: _ScoreFn
+    needs_harm: bool
 
 # ---------------------------------------------------------------------------
 # Models from the paper
@@ -81,15 +85,11 @@ MODELS = [
     "huihui-ai/gemma-3-1b-it-abliterated",
 ]
 
-SPLITS_DIR = Path("data/raw/splits")
-RESULTS_DIR = Path("results")
-
-
 # ---------------------------------------------------------------------------
 # Strategy definitions
 # ---------------------------------------------------------------------------
 
-STRATEGIES = {
+STRATEGIES: dict[str, _StrategySpec] = {
     "mean_diff": {
         "fn": mean_diff,
         "score": score_projection,
@@ -117,29 +117,29 @@ STRATEGIES = {
     },
 }
 
-
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
+
 def load_prompts(path: Path) -> list[str]:
-    return [l.strip() for l in open(path) if l.strip()]
+    return [line.strip() for line in open(path) if line.strip()]
 
 
-def load_all_splits() -> dict:
+def load_all_splits(splits_dir: Path) -> dict:
     """Load all fit, validation, and eval prompt splits."""
     return {
-        "fit_harm": load_prompts(SPLITS_DIR / "fit_harmful_advbench.txt"),
-        "fit_norm": load_prompts(SPLITS_DIR / "fit_normative_alpaca.txt"),
-        "val_harm": load_prompts(SPLITS_DIR / "val_harmful_advbench.txt"),
-        "val_norm": load_prompts(SPLITS_DIR / "val_normative_alpaca.txt"),
+        "fit_harm": load_prompts(splits_dir / "fit_harmful_advbench.txt"),
+        "fit_norm": load_prompts(splits_dir / "fit_normative_alpaca.txt"),
+        "val_harm": load_prompts(splits_dir / "val_harmful_advbench.txt"),
+        "val_norm": load_prompts(splits_dir / "val_normative_alpaca.txt"),
         "eval_harm": {
             p.stem.replace("eval_harmful_", ""): load_prompts(p)
-            for p in sorted(SPLITS_DIR.glob("eval_harmful_*.txt"))
+            for p in sorted(splits_dir.glob("eval_harmful_*.txt"))
         },
         "eval_benign": {
             p.stem.replace("eval_benign_", ""): load_prompts(p)
-            for p in sorted(SPLITS_DIR.glob("eval_benign_*.txt"))
+            for p in sorted(splits_dir.glob("eval_benign_*.txt"))
         },
     }
 
@@ -147,6 +147,7 @@ def load_all_splits() -> dict:
 # ---------------------------------------------------------------------------
 # Single model evaluation
 # ---------------------------------------------------------------------------
+
 
 def evaluate_model(
     model_id: str,
@@ -158,14 +159,16 @@ def evaluate_model(
     """Run full evaluation for one model. Returns a DataFrame of results."""
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Model: {model_id}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id, dtype=torch.float16, trust_remote_code=True
-    ).to(device).eval() # type: ignore[arg-type]
+    model = (
+        AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float16, trust_remote_code=True)
+        .to(device)
+        .eval()
+    )  # type: ignore[arg-type]
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -178,13 +181,13 @@ def evaluate_model(
     val_harm_all = extract_all_layers(model, tokenizer, splits["val_harm"], pooling=pooling)
     val_norm_all = extract_all_layers(model, tokenizer, splits["val_norm"], pooling=pooling)
 
-    n_layers = fit_harm_all.shape[1]
-
     # Select single operating layer via mean_diff on validation set
     print("Selecting layer by validation holdout (mean_diff)...")
     best_layer = select_layer_val(
-        fit_harm_all, fit_norm_all,
-        val_harm_all, val_norm_all,
+        fit_harm_all,
+        fit_norm_all,
+        val_harm_all,
+        val_norm_all,
     )
     print(f"  Best layer: {best_layer}")
 
@@ -216,10 +219,7 @@ def evaluate_model(
         print(f"\n  Strategy: {strat_name}")
 
         t0 = time.perf_counter()
-        if strat["needs_harm"]:
-            w = strat["fn"](fit_norm, fit_harm)
-        else:
-            w = strat["fn"](fit_norm)
+        w = strat["fn"](fit_norm, fit_harm) if strat["needs_harm"] else strat["fn"](fit_norm)
         fit_ms = (time.perf_counter() - t0) * 1000
         score_fn = strat["score"]
 
@@ -234,17 +234,19 @@ def evaluate_model(
                     s_harm, s_benign = -s_harm, -s_benign
                 tpr = tpr_at_fpr(s_benign, s_harm)
 
-                rows.append({
-                    "model": model_id,
-                    "strategy": strat_name,
-                    "layer": best_layer,
-                    "harmful_source": h_name,
-                    "benign_source": b_name,
-                    "auroc": raw,
-                    "eff_auroc": eff,
-                    "tpr_1pct_fpr": tpr,
-                    "fit_ms": fit_ms,
-                })
+                rows.append(
+                    {
+                        "model": model_id,
+                        "strategy": strat_name,
+                        "layer": best_layer,
+                        "harmful_source": h_name,
+                        "benign_source": b_name,
+                        "auroc": raw,
+                        "eff_auroc": eff,
+                        "tpr_1pct_fpr": tpr,
+                        "fit_ms": fit_ms,
+                    }
+                )
 
     return pd.DataFrame(rows)
 
@@ -253,18 +255,28 @@ def evaluate_model(
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Reproduce paper results.")
-    parser.add_argument("--model", type=str, default=None,
-                        help="Single model to evaluate.")
-    parser.add_argument("--all", action="store_true",
-                        help="Evaluate all 12 models from the paper.")
-    parser.add_argument("--strategies", nargs="*",
-                        default=list(STRATEGIES.keys()),
-                        help="Strategies to evaluate.")
+    parser.add_argument("--model", type=str, default=None, help="Single model to evaluate.")
+    parser.add_argument("--all", action="store_true", help="Evaluate all 12 models from the paper.")
+    parser.add_argument(
+        "--strategies", nargs="*", default=list(STRATEGIES.keys()), help="Strategies to evaluate."
+    )
     parser.add_argument("--pooling", default="max", choices=["max", "mean", "last"])
     parser.add_argument("--device", default=None)
-    parser.add_argument("--output-dir", default=str(RESULTS_DIR))
+    parser.add_argument(
+        "--splits-dir",
+        type=Path,
+        default=Path("data/raw/splits"),
+        help="Directory containing the fit/val/eval text files.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("results"),
+        help="Directory to write per-model CSVs and summary.",
+    )
     args = parser.parse_args()
 
     if not args.model and not args.all:
@@ -275,21 +287,29 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Load data
-    if not SPLITS_DIR.exists():
-        import sys
-        sys.exit("Data splits not found. Run: python scripts/download_datasets.py")
-    splits = load_all_splits()
-    print(f"Loaded: {len(splits['fit_harm'])} harmful fit, "
-          f"{len(splits['fit_norm'])} normative fit, "
-          f"{sum(len(v) for v in splits['eval_harm'].values())} harmful eval, "
-          f"{sum(len(v) for v in splits['eval_benign'].values())} benign eval.")
+    if not args.splits_dir.exists():
+        parser.error(
+            f"Splits directory not found: {args.splits_dir}. "
+            "Pass --splits-dir or run from the repo root after "
+            "executing `python scripts/download_datasets.py`."
+        )
+    splits = load_all_splits(args.splits_dir)
+    print(
+        f"Loaded: {len(splits['fit_harm'])} harmful fit, "
+        f"{len(splits['fit_norm'])} normative fit, "
+        f"{sum(len(v) for v in splits['eval_harm'].values())} harmful eval, "
+        f"{sum(len(v) for v in splits['eval_benign'].values())} benign eval."
+    )
 
     # Evaluate
     all_dfs = []
     for model_id in models:
         df = evaluate_model(
-            model_id, splits, args.strategies,
-            pooling=args.pooling, device=args.device,
+            model_id,
+            splits,
+            args.strategies,
+            pooling=args.pooling,
+            device=args.device,
         )
         all_dfs.append(df)
 
@@ -313,9 +333,9 @@ def main():
             .reset_index()
         )
         summary.to_csv(out_dir / "summary.csv", index=False)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("  Summary")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(summary.to_string(index=False))
 
     print(f"\nResults saved to {out_dir}/")
