@@ -63,13 +63,13 @@ from harm_directions.evaluation import (
 # ---------------------------------------------------------------------------
 
 MODELS = [
-    # # Qwen2.5
-    # "Qwen/Qwen2.5-0.5B",
-    # "Qwen/Qwen2.5-0.5B-Instruct",
-    # "huihui-ai/Qwen2.5-0.5B-Instruct-abliterated",
-    # # Qwen3.5
-    # "Qwen/Qwen3.5-0.8B-Base",
-    # "Qwen/Qwen3.5-0.8B",
+    # Qwen2.5
+    "Qwen/Qwen2.5-0.5B",
+    "Qwen/Qwen2.5-0.5B-Instruct",
+    "huihui-ai/Qwen2.5-0.5B-Instruct-abliterated",
+    # Qwen3.5
+    "Qwen/Qwen3.5-0.8B-Base",
+    "Qwen/Qwen3.5-0.8B",
     "huihui-ai/Huihui-Qwen3.5-0.8B-abliterated",
     # Llama-3.2
     "meta-llama/Llama-3.2-1B",

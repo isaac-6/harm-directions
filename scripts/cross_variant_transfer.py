@@ -83,6 +83,16 @@ FAMILIES: dict[str, dict[str, str]] = {
         "instruct": "google/gemma-3-1b-it",
         "abliterated": "huihui-ai/gemma-3-1b-it-abliterated",
     },
+    "Qwen3.5-2B": {
+        "base": "Qwen/Qwen3.5-2B-Base",
+        "instruct": "Qwen/Qwen3.5-2B",
+        "abliterated": "huihui-ai/Huihui-Qwen3.5-2B-abliterated",
+    },
+    "Qwen3.5-4B": {
+        "base": "Qwen/Qwen3.5-4B-Base",
+        "instruct": "Qwen/Qwen3.5-4B",
+        "abliterated": "huihui-ai/Huihui-Qwen3.5-4B-abliterated",
+    },
     "Qwen3.5-9B": {
         "base": "Qwen/Qwen3.5-9B-Base",
         "instruct": "Qwen/Qwen3.5-9B",
