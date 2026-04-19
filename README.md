@@ -23,7 +23,7 @@ abliteration, which suggests that models acquire a representation of
 harmful intent during pretraining, before alignment shapes their
 response behaviour.
 
-For the full analysis across 12 models, see the (upcoming paper).
+For the full analysis across 12 models (plus 9 extra for scaling), see the (upcoming paper).
 
 ## Installation
 
