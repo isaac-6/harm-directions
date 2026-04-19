@@ -1,13 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the paper."
 type: software
-title: "Linear harm-direction recovery from LLM residual streams"
+title: "harm-directions: Linear harm-direction recovery from LLM residual streams"
 authors:
   - family-names: "Llorente-Saguer"
     given-names: "Isaac"
 version: 0.1.0
-date-released: 2026-04-XX
+date-released: 2026-04-19
 repository-code: "https://github.com/isaac-6/harm-directions"
+license: MIT
 preferred-citation:
   type: article
   authors:
@@ -15,5 +16,3 @@ preferred-citation:
       given-names: "Isaac"
   title: "Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures"
   year: 2026
-  journal: "arXiv preprint"
-  url: "https://arxiv.org/abs/PLACEHOLDER"

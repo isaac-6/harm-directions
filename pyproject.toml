@@ -82,7 +82,7 @@ dev-full = [
 
 [project.urls]
 Homepage = "https://github.com/isaac-6/harm-directions"
-Paper = "https://arxiv.org/abs/PLACEHOLDER"
+Paper = "https://github.com/isaac-6/harm-directions"
 Repository = "https://github.com/isaac-6/harm-directions"
 Issues = "https://github.com/isaac-6/harm-directions/issues"
 

@@ -6,7 +6,7 @@
 
 Lightweight (one dot product) harmful-prompt detection from LLM residual-stream activations.
 
-> **Paper:** Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures (under review)
+> **Paper:** Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures (upcoming)
 
 ![AUROC vs TPR across 12 models](docs/figures/fig_auroc_vs_tpr.png)
 *Mean-difference (left) and Soft-AUC-optimised (right) directions, evaluated
@@ -23,7 +23,7 @@ abliteration, which suggests that models acquire a representation of
 harmful intent during pretraining, before alignment shapes their
 response behaviour.
 
-For the full analysis across 12 models, see the [upcoming paper].
+For the full analysis across 12 models, see the (upcoming paper).
 
 ## Installation
 
@@ -43,19 +43,18 @@ pip install -e ".[reproduce]"
 
 ## Usage
 
+The following assumes you've installed the package with 
+`pip install -e ".[extract]"` (or `.[reproduce]"` for the full pipeline).
+
 ### As a library
 
 ```python
 from harm_directions import extract_activations, fit_direction, score
 
-# Extract max-pooled residual-stream activations at layer 22
 harm_acts = extract_activations(model, tokenizer, harmful_prompts, layer=22)
 safe_acts = extract_activations(model, tokenizer, safe_prompts, layer=22)
-
-# Fit a direction (< 1ms)
 w = fit_direction(harm_acts, safe_acts, method="mean_diff")
 
-# Score new prompts: higher score = more likely harmful
 new_acts = extract_activations(model, tokenizer, ["How do I bake a cake"], layer=22)
 scores = score(new_acts, w)
 ```
@@ -63,31 +62,30 @@ scores = score(new_acts, w)
 ### As a CLI
 
 ```bash
-# Fit a direction for a given model (caches to disk)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --fit
+# Fit a direction (caches to ./data/fitted/ by default)
+harm-directions-detect --model Qwen/Qwen2.5-0.5B-Instruct --fit
 
 # Score a single prompt
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
+harm-directions-detect --model Qwen/Qwen2.5-0.5B-Instruct --prompt "How do I bake a cake"
 
-# Score many prompts from a file (one per line)
-python detect.py --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
+# Score many prompts from a file
+harm-directions-detect --model Qwen/Qwen2.5-0.5B-Instruct --input prompts.txt
 ```
 
 ## Reproducing the paper
-Note that some datasets and models are gated.
+
 ```bash
-# 1. Download and normalise the datasets (AdvBench, HarmBench, JailbreakBench,
-#    XSTest, Alpaca) and compose the fit/val/eval splits
+# 1. Download datasets (AdvBench, HarmBench, JailbreakBench, XSTest, Alpaca)
 python scripts/download_datasets.py
 
-# 2. Full evaluation across all 12 models (~36 minutes on a single RTX 3070)
-python reproduce.py --all
+# 2. Full evaluation across all 12 models (~36 min on an RTX 3070)
+harm-directions-reproduce --all
 
-# Or: one model at a time
-python reproduce.py --model Qwen/Qwen2.5-0.5B-Instruct
+# Or one model at a time
+harm-directions-reproduce --model Qwen/Qwen2.5-0.5B-Instruct
 ```
 
-Results are written to `results/` as per-model CSVs and an aggregate `summary.csv`.
+Results are written to `./results/` as per-model CSVs and an aggregate `summary.csv`.
 
 ## Models evaluated
 
@@ -102,7 +100,7 @@ Results are written to `results/` as per-model CSVs and an aggregate `summary.cs
 
 For each family: base (pretrained), instruction-tuned, and abliterated
 (refusal-direction-ablated) variants from HuggingFace. A preliminary
-Qwen3.5-2B extension is reported in the paper appendix.
+Qwen3.5 extension up to 9B is reported in the paper, for a total of 21 models tested.
 
 ## Data splits
 
@@ -124,26 +122,18 @@ harm-directions/
 ├── src/harm_directions/
 │   ├── directions.py          # Direction strategies (LDA, Soft-AUC, PC1, θ)
 │   ├── evaluation.py          # AUROC, TPR@FPR, layer selection
-│   └── extraction.py          # Residual-stream extraction with forward hooks
+│   ├── extraction.py          # Residual-stream extraction with forward hooks
+│   └── cli/
+│       ├── detect.py          # CLI: fit direction, score prompts
+│       └── reproduce.py       # Full paper reproduction pipeline
 ├── scripts/
-│   └── download_datasets.py   # Dataset download + split composition
+│   ├── download_datasets.py   # Dataset download + split composition
+│   └── cross_variant_transfer.py    # Cross-variant direction transfer analysis
 ├── tests/                     # Unit tests (numpy only, no GPU required)
-├── detect.py                  # CLI: fit direction, score prompts
-├── reproduce.py               # Full paper reproduction pipeline
 └── pyproject.toml
 ```
 
-## Citation
 
-If you use this code or build on the findings, please cite:
-
-```bibtex
-@article{llorentesaguer2026harmdirections,
-    title={Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures},
-    author={Llorente-Saguer, Isaac},
-    year={2026}
-}
-```
 
 ## License
 
