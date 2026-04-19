@@ -1,3 +1,6 @@
+[![Version](https://img.shields.io/github/v/release/isaac-6/harm-directions)](https://github.com/isaac-6/harm-directions/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19654160.svg)](https://doi.org/10.5281/zenodo.19654160)
+
 [![CI](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml/badge.svg)](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
