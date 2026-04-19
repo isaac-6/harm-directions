@@ -23,15 +23,14 @@ from __future__ import annotations
 
 import argparse
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import TypedDict
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from collections.abc import Callable
-from typing import TypedDict
 
 from harm_directions import (
     extract_activations,
