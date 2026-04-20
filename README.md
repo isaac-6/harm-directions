@@ -9,22 +9,19 @@
 
 Lightweight (one dot product) harmful-prompt detection from LLM residual-stream activations.
 
-> **Paper:** Harmful Intent as a Linear Feature of Residual Streams Across LLM Architectures (upcoming)
+> **Paper:** Harmful Intent as a Geometrically Recoverable Feature of LLM Residual Streams (upcoming)
 
 ![AUROC vs TPR across 12 models](docs/figures/fig_auroc_vs_tpr.png)
 *Mean-difference (left) and Soft-AUC-optimised (right) directions, evaluated
 on held-out data across 12 models (4 families × 3 alignment variants).
-Mean AUROC 0.974 and 0.982; TPR@1%FPR 0.705 and 0.799. Whiskers: stratified
-bootstrap 95% CIs.*
+Mean AUROC 0.975 and 0.982; TPR@1%FPR 0.706 and 0.797. Whiskers: stratified
+bootstrap 95% CIs (1,000 resamples).*
 
 ## What this is
 
-Harmful prompt detection is key for safety downstream, but also to understand how models map these concepts internally.
+Detecting harmful prompts matters both for deployment safety and for understanding how models represent these concepts internally.
 We show how a supervised linear probe over LLM residual-stream activations detects
-harmful user prompts. The probe is stable across instruction tuning and
-abliteration, which suggests that models acquire a representation of
-harmful intent during pretraining, before alignment shapes their
-response behaviour.
+harmful user prompts. The probe is stable across instruction tuning and abliteration, consistent with an account in which models acquire a representation of harmful intent as part of general language understanding, independently of how alignment shapes their response behaviour.
 
 For the full analysis across 12 models (plus 9 extra for scaling), see the (upcoming paper).
 
@@ -105,8 +102,7 @@ Results are written to `./results/` as per-model CSVs and an aggregate `summary.
 | Gemma-3 | 1B | 26 | 1152 |
 
 For each family: base (pretrained), instruction-tuned, and abliterated
-(refusal-direction-ablated) variants from HuggingFace. A preliminary
-Qwen3.5 extension up to 9B is reported in the paper, for a total of 21 models tested.
+(refusal-direction-ablated) variants from HuggingFace. A Qwen3.5 scaling extension at 2B, 4B, and 9B is also reported in the paper, for a total of 21 models.
 
 ## Data splits
 
@@ -139,7 +135,22 @@ harm-directions/
 └── pyproject.toml
 ```
 
+## Citation
 
+If you use this code or build on this work, please cite:
+
+```bibtex
+@software{llorente_saguer_harm_directions_2026,
+  author  = {Llorente-Saguer, Isaac},
+  title   = {harm-directions: Lightweight harmful-prompt detection from LLM residual-stream activations},
+  year    = {2026},
+  version = {v0.1.0},
+  doi     = {10.5281/zenodo.19654160},
+  url     = {https://github.com/isaac-6/harm-directions}
+}
+```
+
+An arXiv preprint describing the full analysis is forthcoming; this section will be updated with the paper citation on release.
 
 ## License
 
