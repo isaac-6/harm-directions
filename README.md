@@ -1,5 +1,5 @@
 [![Version](https://img.shields.io/github/v/release/isaac-6/harm-directions)](https://github.com/isaac-6/harm-directions/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19654160.svg)](https://doi.org/10.5281/zenodo.19654160)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19671546.svg)](https://doi.org/10.5281/zenodo.19671546)
 
 [![CI](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml/badge.svg)](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -145,7 +145,7 @@ If you use this code or build on this work, please cite:
   title   = {harm-directions: Lightweight harmful-prompt detection from LLM residual-stream activations},
   year    = {2026},
   version = {v1.0.0},
-  doi     = {10.5281/zenodo.19654160},
+  doi     = {10.5281/zenodo.19671546},
   url     = {https://github.com/isaac-6/harm-directions}
 }
 ```
