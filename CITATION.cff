@@ -5,8 +5,8 @@ title: "harm-directions: Linear harm-direction recovery from LLM residual stream
 authors:
   - family-names: "Llorente-Saguer"
     given-names: "Isaac"
-version: 0.1.0
-date-released: 2026-04-19
+version: 1.0.0
+date-released: 2026-04-20
 repository-code: "https://github.com/isaac-6/harm-directions"
 license: MIT
 preferred-citation:

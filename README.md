@@ -144,7 +144,7 @@ If you use this code or build on this work, please cite:
   author  = {Llorente-Saguer, Isaac},
   title   = {harm-directions: Lightweight harmful-prompt detection from LLM residual-stream activations},
   year    = {2026},
-  version = {v0.1.0},
+  version = {v1.0.0},
   doi     = {10.5281/zenodo.19654160},
   url     = {https://github.com/isaac-6/harm-directions}
 }
