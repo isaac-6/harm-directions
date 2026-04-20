@@ -41,4 +41,5 @@ setup.txt
 input.txt
 tests/testaux.py
 .beta/
+figures/*
 submission.zip

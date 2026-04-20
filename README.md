@@ -34,6 +34,9 @@ Requires Python 3.10+. Tested on Ubuntu with CUDA 12, CPU-only supported
 for the detection functions (extraction requires a GPU for reasonable runtime).
 
 ```bash
+# If you have a GPU, install torch with matching CUDA version first:
+pip install torch --index-url https://download.pytorch.org/whl/cu128  # or cu130
+
 # Core library only (numpy, sklearn)
 pip install -e .
 
