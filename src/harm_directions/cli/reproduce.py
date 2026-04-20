@@ -164,11 +164,9 @@ def evaluate_model(
     print(f"{'=' * 60}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    model = (
-        AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float16, trust_remote_code=True)
-        .to(device)
-        .eval()
-    )  # type: ignore[arg-type]
+    model = AutoModelForCausalLM.from_pretrained(model_id, dtype="auto", trust_remote_code=True)  # type: ignore[arg-type]
+    model = model.to(device)
+    model.eval()
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 

@@ -44,11 +44,11 @@ def _cache_path(cache_dir: Path, model_id: str, method: str) -> Path:
 
 def _load_model(model_id: str, device: str):
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    model = (
-        AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float16, trust_remote_code=True)
-        .to(device)
-        .eval()
-    )  # type: ignore[arg-type]
+    # fmt: off
+    model = AutoModelForCausalLM.from_pretrained(model_id, dtype="auto", trust_remote_code=True)  # type: ignore[arg-type]
+    # fmt: on
+    model = model.to(device)
+    model.eval()
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer

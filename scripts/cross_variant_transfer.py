@@ -143,7 +143,7 @@ def load_model(model_id: str, device: str):
     model = (
         AutoModelForCausalLM.from_pretrained(
             model_id,
-            dtype=torch.bfloat16,
+            dtype="auto",
             trust_remote_code=True,
         )
         .to(device)
