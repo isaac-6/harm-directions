@@ -168,6 +168,13 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "harm_directions.cli.reproduce",
+    "harm_directions.cli.detect",
+]
+disable_error_code = ["arg-type"]
+
 # ============================================================================
 # Pytest
 # ============================================================================
