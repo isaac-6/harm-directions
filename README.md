@@ -1,5 +1,6 @@
-[![Version](https://img.shields.io/github/v/release/isaac-6/harm-directions)](https://github.com/isaac-6/harm-directions/releases)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.18901-b31b1b.svg)](https://arxiv.org/abs/2604.18901)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19671546.svg)](https://doi.org/10.5281/zenodo.19671546)
+[![Version](https://img.shields.io/github/v/release/isaac-6/harm-directions)](https://github.com/isaac-6/harm-directions/releases)
 
 [![CI](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml/badge.svg)](https://github.com/isaac-6/harm-directions/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -9,7 +10,7 @@
 
 Lightweight (one dot product) harmful-prompt detection from LLM residual-stream activations.
 
-> **Paper:** Harmful Intent as a Geometrically Recoverable Feature of LLM Residual Streams (upcoming)
+> **Paper:** [Harmful Intent as a Geometrically Recoverable Feature of LLM Residual Streams](https://arxiv.org/abs/2604.18901) — arXiv:2604.18901
 
 ![AUROC vs TPR across 12 models](docs/figures/fig_auroc_vs_tpr.png)
 *Mean-difference (left) and Soft-AUC-optimised (right) directions, evaluated
@@ -137,9 +138,19 @@ harm-directions/
 
 ## Citation
 
-If you use this code or build on this work, please cite:
+If you use this code or build on this work, please cite both the paper and the software archive:
 
 ```bibtex
+@misc{llorentesaguer2026harmfulintentgeometricallyrecoverable,
+      title={Harmful Intent as a Geometrically Recoverable Feature of LLM Residual Streams}, 
+      author={Isaac Llorente-Saguer},
+      year={2026},
+      eprint={2604.18901},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2604.18901}
+}
+
 @software{llorente_saguer_harm_directions_2026,
   author  = {Llorente-Saguer, Isaac},
   title   = {harm-directions: Lightweight harmful-prompt detection from LLM residual-stream activations},
@@ -149,8 +160,6 @@ If you use this code or build on this work, please cite:
   url     = {https://github.com/isaac-6/harm-directions}
 }
 ```
-
-An arXiv preprint describing the full analysis is forthcoming; this section will be updated with the paper citation on release.
 
 ## License
 

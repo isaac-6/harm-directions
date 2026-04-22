@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 [project]
 name = "harm-directions"
 version = "1.0.0"
-description = "Linear harm-direction recovery from LLM residual streams."
+description = "Geometrically recoverable harmful-intent detection from LLM residual streams."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -25,7 +25,7 @@ keywords = [
     "harmful-intent-detection",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
