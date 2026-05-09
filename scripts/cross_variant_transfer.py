@@ -14,9 +14,6 @@ Results are appended to:
   results/cross_variant_angles.csv     (pairwise direction angles)
   results/cross_variant_transfer.csv   (3x3 AUROC/TPR matrix per family)
 
-The accompanying scripts/make_transfer_table.py regenerates the paper's
-Table 4 from these CSVs.
-
 Usage
 -----
     # Run all families defined in FAMILIES

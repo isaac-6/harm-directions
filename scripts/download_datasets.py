@@ -213,7 +213,7 @@ def download_alpaca(n_total: int, seed: int) -> None:
 # Prompt dataset statistics
 # ---------------------------------------------------------------------------
 def print_length_statistics(filepaths: list[Path]):
-    print("\n" + "=" * 60 + "\n  Dataset Length Statistics (For TMLR Paper)\n" + "=" * 60)
+    print("\n" + "=" * 60 + "\n  Dataset Length Statistics\n" + "=" * 60)
     print(f"{'Dataset':<30} | {'Count':<6} | {'Avg Chars':<10} | {'Std Chars':<10}")
     print("-" * 65)
 
@@ -301,7 +301,6 @@ def main() -> None:
     download_jailbreakbench()
     download_xstest()
 
-    # FIXED: Pylance typo error mapped to args.alpaca_n
     download_alpaca(n_total=args.alpaca_n, seed=args.seed)
 
     prov = compose_splits(seed=args.seed)

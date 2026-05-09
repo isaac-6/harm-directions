@@ -61,8 +61,8 @@ jobs:
 
       - name: Run ruff
         run: |
-          ruff check src tests scripts
-          ruff format --check src tests scripts
+          ruff check src tests scripts experiments
+          ruff format --check src tests scripts experiments
 
       - name: Run mypy
         run: mypy src

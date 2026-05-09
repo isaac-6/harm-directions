@@ -1,8 +1,17 @@
 # Changelog
 
+
+## [2.0.0] - 2026-05-09
+Release corresponding to v2 of arXiv:2604.18901
+
+- Added experiment scripts for all main results and ablations
+- Added figure and table generation scripts
+- Updated Makefile with additional commands for reproducibility
+- Updated README with current usage
+
 ## [1.0.0] - 2026-04-20
 
-Release corresponding to arXiv:XXXX.XXXXX (submission pending).
+Release corresponding to arXiv:2604.18901
 
 - Models loaded in native precision.
 - Updated paper title, description and key figure.
